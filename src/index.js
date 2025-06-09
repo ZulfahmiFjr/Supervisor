@@ -30,7 +30,7 @@ const wss = new WebSocket.Server({ port: 27095 });
 const subscribers = [];
 const servers = [];
 
-const levelCache = new Level('pm_level1');
+const levelCache = new Level('rpg_world');
 
 if (!fs.existsSync("cache")){
     fs.mkdirSync("cache");

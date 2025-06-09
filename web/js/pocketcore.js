@@ -19,6 +19,12 @@ function connectPocketCore(address, onopen, onclose) {
 
     socket.addEventListener('close', () => {
         UI.log('Socket closed');
+        if (onclose) onclose();
+
+        setTimeout(() => {
+            UI.log("Reconnecting to " + address + "...");
+            connectPocketCore(address, onopen, onclose);
+        }, 3000);
     });
 
     if(onopen) {
