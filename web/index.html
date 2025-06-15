@@ -57,11 +57,14 @@
         -webkit-user-select: none; /* Untuk browser Safari/Chrome lama */
         cursor: grab; /* Mengubah kursor menjadi ikon tangan saat di atas peta */
       }
+      #interface-overlay {
+        display: none !important;
+      }
     </style>
   </head>
 
   <body class="bg-pink-200 min-h-screen m-0" x-data="{ dashboardOpen: false }">
-    <div id="interface-overlay" hidden>
+    <div id="interface-overlay">
       <input type="text" id="connection-input" value="ws://localhost:27095" />
       <span id="connection-light"></span>
       <span id="stats-viewers-count"></span>
@@ -136,7 +139,7 @@
           <input
             id="console-input"
             type="text"
-            placeholder="TEXT BOX SEND PACKET"
+            placeholder="Console Input..."
             class="w-full bg-white text-black text-center py-1 rounded-b-md"
           />
         </div>

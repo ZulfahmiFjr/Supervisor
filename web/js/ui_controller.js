@@ -164,9 +164,9 @@ const UI = {
     messageElement.classList.add("transition-all");
     messageElement.innerHTML = message;
 
-    setTimeout(() => {
-      messageElement.classList.add("opacity-0");
-    }, 1000 * 5); // 5 seconds?
+    // setTimeout(() => {
+    //   messageElement.classList.add("opacity-0");
+    // }, 1000 * 5); // 5 seconds?
 
     UI.messageList.appendChild(messageElement);
     UI.messageList.scrollTop = UI.messageList.scrollHeight;
