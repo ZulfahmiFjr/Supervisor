@@ -9,17 +9,9 @@ function recieveChunk(chunk) {
         validateChunk(chunk);
     } catch(error) {
         return UI.log(`Invalid ${describeChunk(chunk)}:` + error);
-        // throw error;
     }
 
-    // Edit mapBufferImage buffer with this new chunk
-    renderer.renderChunk(chunk).then(() => {
-        // Chunk rendered, save
-        chunks[chunk.x + ':' + chunk.z] = chunk;
-    }).catch(error => {
-        UI.log(`Error rendering ${describeChunk(chunk)}: ` + error);
-        throw error;
-    });
+    renderer.renderChunk(chunk);
 }
 
 function describeChunk(chunk) {
@@ -56,7 +48,15 @@ function recieveChunks(chunksBase64) {
     })).then((chunks) => {
         (new Promise((resolve, reject) => {
             try {
-                chunks.forEach(chunk => recieveChunk(chunk));
+                // chunks.forEach(chunk => recieveChunk(chunk));
+
+                renderer.renderChunkBatchAsync(chunks).then(() => {
+                    UI.log('Batch rendered asynchronously');
+                }).catch(err => {
+                    UI.log('Error rendering chunks in batch asynchronously: ' + err);
+                    reject(err);
+                });
+
                 resolve();
             } catch (e) {
                 reject(e);
@@ -87,4 +87,20 @@ function getBlockIdAt(x, z) {
 
 function getChunk(worldX, worldZ) {
     return chunks[(worldX >> 4) + ':' + (worldZ >> 4)];
+}
+
+function getWorldY(x, z) {
+    return 0;
+    let cx = x >> 4;
+    let cz = z >> 4;
+    let rx = x % 16;
+    let rz = z % 16;
+    // console.log({x, z, cx, cz, rx, rz});
+
+    let chunk = chunks[cx + ':' + cz] ?? null;
+    // console.log(chunk);
+    if (chunk) {
+        return Object.keys(chunk.layer[Math.floor(rx)][Math.floor(rz)] ?? [])[0] ?? 255;
+    }
+    return 255;
 }

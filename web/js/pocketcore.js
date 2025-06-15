@@ -12,13 +12,21 @@ function connectPocketCore(address, onopen, onclose) {
 
     // Connection opened
     socket.addEventListener('open', function (event) {
-        socket.send(JSON.stringify({ 'type': 'subscribe' }));
+        socket.send(JSON.stringify({ 'type': 'login.viewer', 'body': { 'name': 'Viewer', 'level': null } }));
 
         UI.log("Connected to " + address + " successfully!");
     });
 
     socket.addEventListener('close', () => {
+        socket = null;
+
         UI.log('Socket closed');
+        if (onclose) onclose();
+
+        setTimeout(() => {
+            UI.log("Reconnecting to " + address + "...");
+            connectPocketCore(address, onopen, onclose);
+        }, 3000);
     });
 
     if(onopen) {
@@ -32,13 +40,49 @@ function connectPocketCore(address, onopen, onclose) {
     socket.addEventListener('message', handlePocketcorePacket);
 }
 
+const sendViewPortPacket = () => {
+    if(socket === null) return;
+
+    sendPacket({
+        type: 'viewport',
+        body: renderer.ViewPort.toPacket()
+    });
+    
+    setTimeout(sendViewPortPacket, 1000);
+};
+
 function handlePocketcorePacket(event) {
     let response = JSON.parse(event.data);
-    // console.log(response);
+    let player;
 
     switch (response.type) {
+        case 'login.viewer':
+            if(response.body.status !== true) {
+                UI.log('Authentication failed');
+                socket.close();
+            } else {
+                UI.log('Authentication successful!');
+                sendViewPortPacket();
+            }
+
+            break;
+
+        case 'viewport':
+            renderer.ViewPort.moveTo(response.body.worldX, response.body.worldZ);
+            break;
+
+        case 'close':
+            UI.log('Connection was close, reason: ' + response.body.reason);
+            break;
+
+        case 'info':
+            let viewerCount = response.body.viewerCount;
+            UI.statsViewersCount.innerHTML = viewerCount;
+
+            break;
+
         case 'message':
-            UI.log('[PocketCore]: ' + response.body.message);
+            UI.log(response.body.message);
 
             break;
         case 'chunk':
@@ -46,13 +90,22 @@ function handlePocketcorePacket(event) {
             UI.log('Recieved chunkX: ' + response.body.chunk.x + ', chunkZ: ' + response.body.chunk.z);
             break;
 
-        case 'level':
-            UI.log('Recieved level data: ' + response.body.chunks.length);
+        case 'sector':
+            UI.log('Recieved sector ');
             recieveChunks(response.body.chunks);
             recieveEntities(response.body.entities);
             // console.log('Recieved chunks in bulk, size: ' + floor(response.body.chunks.length) + ' bytes');
             break;
 
+        case 'player.message':
+            console.log(response);
+
+            player = getPlayer(response.body.eid);
+            if(player) {
+                UI.log(`${player.name}: ${response.body.message}`);
+            }
+            break;
+            
         case 'player.join':
             UI.log('Player ' + response.body.name + ' has joined the game');
 
@@ -60,8 +113,12 @@ function handlePocketcorePacket(event) {
                 UI.log('Player rejected for not having position');
                 return;
             }
+            if(!response.body.eid) {
+                UI.log('Player rejected for not having EID');
+                return;
+            }
 
-            addPlayer(response.body.eid ?? 0, {
+            addPlayer(response.body.eid, {
                 name: response.body.name,
                 eid: response.body.eid,
                 position: response.body.position,
@@ -77,7 +134,7 @@ function handlePocketcorePacket(event) {
             break;
 
         case 'player.face':
-            let player = getPlayer(response.body.eid);
+            player = getPlayer(response.body.eid);
             if(!player) {
                 UI.log('Got face for invalid player');
                 return;
@@ -100,10 +157,10 @@ function handlePocketcorePacket(event) {
     
 }
 
-function sendPacket(packet) {
+function sendPacket(packet, callback = null) {
     return new Promise((resolve) => {
-        socket.send(packet);
+        socket.send(JSON.stringify(packet));
 
         resolve();
-    });
+    }).then(callback);
 }

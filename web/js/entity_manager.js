@@ -1,4 +1,5 @@
 var players = [];
+var entities = [];
 
 function addPlayer(eid, player) {
     if(!eid) {
@@ -24,6 +25,7 @@ function handleFaceUpdate(eid, pixelArray) {
 
 function removePlayer(eid, player) {
     if(players[eid]) {
+        // TODO, resets keys unnecessary
         players.splice(eid, 1);
     }
 }
@@ -35,6 +37,10 @@ function getPlayer(eid) {
 function updatePosition(eid, position) {
     if(players[eid]) {
         players[eid].position = position;
+    }
+
+    if(followPlayer === eid) {
+        renderer.ViewPort.moveTo(position.x, position.z);
     }
 }
 

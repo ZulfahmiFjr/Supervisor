@@ -1,8 +1,82 @@
-const logger = require("./logger");
+const logger = require("../utils/logger");
 
 const decode = (pk) => pk.body;
 
 const Packet = {
+
+    ViewerLogin: {
+        listeners: [],
+        name: "login.viewer",
+        broadcast: true,
+
+        decode,
+        encode: () => {
+            return Packet._encode(Packet.ViewerLogin.name, { status: true });
+        },
+        handle: (pk, ws) => {
+            return true;
+        }
+    },
+
+    ServerLogin: {
+        listeners: [],
+        name: "login.server",
+        broadcast: true,
+
+        decode,
+        encode: () => {
+            return Packet._encode(Packet.ServerLogin.name, { status: true });
+        },
+        handle: (pk, ws) => {
+            return true;
+        }
+    },
+
+    InfoPacket: {
+        listeners: [],
+        name: "info",
+        broadcast: true,
+
+        decode,
+        encode: (serverName, ip, port, levels, viewerCount) => {
+            return Packet._encode(Packet.InfoPacket.name, {
+                serverName, ip, port, levels, viewerCount
+            });
+        },
+        handle: (pk, ws) => {
+            return true;
+        }
+    },
+
+    ViewPort: {
+        listeners: [],
+        name: "viewport",
+        broadcast: true,
+
+        decode,
+        encode: (worldX, worldZ, radius) => {
+            return Packet._encode(Packet.ViewPort.name, {
+                worldX, worldZ, radius
+            });
+        },
+        handle: (pk, ws) => {
+            return true;
+        }
+    },
+
+    Close: {
+        listeners: [],
+        name: "close",
+        broadcast: false,
+
+        decode,
+        encode: (reason) => {
+            return Packet._encode(Packet.Close.name, { reason });
+        },
+        handle: (pk, ws) => {
+            return false;
+        }
+    },
 
     EntityPosition: {
         listeners: [],
@@ -11,10 +85,24 @@ const Packet = {
 
         decode,
         encode: (eid, position) => {
-            return Packet._encode('entity.position', {
+            return Packet._encode(Packet.EntityPosition.name, {
                 eid,
                 position
             });
+        },
+        handle: (pk, ws) => {
+            return true;
+        }
+    },
+
+    PlayerMessage: {
+        listeners: [],
+        name: "player.message",
+        broadcast: true,
+
+        decode,
+        encode: (eid, message) => {
+            return Packet._encode(Packet.PlayerMessage.name, { eid, message });
         },
         handle: (pk, ws) => {
             return true;
@@ -28,7 +116,7 @@ const Packet = {
 
         decode,
         encode: (eid, name, position, face = null) => {
-            return Packet._encode('player.join', {
+            return Packet._encode(Packet.PlayerJoin.name, {
                 eid,
                 name,
                 position,
@@ -48,7 +136,7 @@ const Packet = {
 
         decode,
         encode: (eid, name) => {
-            return Packet._encode('player.leave', {
+            return Packet._encode(Packet.PlayerLeave.name, {
                 eid,
                 name,
             });
@@ -66,7 +154,7 @@ const Packet = {
 
         decode,
         encode: (eid, pixelArray) => {
-            return Packet._encode('player.face', {
+            return Packet._encode(Packet.PlayerFace.name, {
                 eid,
                 pixelArray,
                 size: 64
@@ -77,14 +165,13 @@ const Packet = {
         }
     },
 
-    Level: {
+    Sector: {
         listeners: [],
-        name: "level",
+        name: "sector",
         decode,
 
-        encode: (name, chunks, entities) => {
-            return Packet._encode('level', {
-                name,
+        encode: (chunks, entities) => {
+            return Packet._encode(Packet.Sector.name, {
                 chunks: Buffer.from(JSON.stringify(Object.values(chunks))).toString('base64'),
                 entities
             });
@@ -101,9 +188,10 @@ const Packet = {
 
         decode,
 
-        encode: (body) => {
-            return Packet._encode('chunk', body);
+        encode: (x, z, layer) => {
+            return Packet._encode(Packet.Chunk.name, {x, z, layer});
         },
+        
         handle: (pk, ws) => {
             return true;
         }
@@ -118,26 +206,10 @@ const Packet = {
             return pk.body.time;
         },
         encode: (time) => {
-            return Packet._encode('ping', { time });
+            return Packet._encode(Packet.Ping.name, { time });
         },
         handle: (pk, ws) => {
             ws.send(JSON.stringify(pk));
-            ws.send('Hello! response to ping packet');
-
-            return true;
-        }
-    },
-
-    Subscribe: {
-        listeners: [],
-        name: "subscribe",
-        decode: (pk) => {
-            return true;
-        },
-        encode: () => {
-            return Packet._encode('subscribe')
-        },
-        handle: (pk, ws) => {
             return true;
         }
     },
@@ -151,7 +223,7 @@ const Packet = {
             return pk.body.message;
         },
         encode: (message) => {
-            return Packet._encode('message', { message });
+            return Packet._encode(Packet.Message.name, { message });
         },
         handle: (pk, ws) => {
             logger.info('Message: ' + Packet.Message.decode(pk));
