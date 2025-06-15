@@ -151,7 +151,7 @@ const Supervisor = {
      * Initializes the memory storage objects for chunks and entities
      */
     _caches: () => {
-        Supervisor.loadCache('test', true);
+        Supervisor.loadCache('rpg_world', true);
     },
 
     /**

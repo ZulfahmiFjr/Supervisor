@@ -16,7 +16,7 @@ const ChunkController = {
     },
 
     handleChunkPacket(pk, ws) {
-        let cache = _LevelCacheStorageLogic.getCacheByName('test');
+        let cache = _LevelCacheStorageLogic.getCacheByName('rpg_world');
 
         if(cache) {
             cache.setChunk(pk.body.chunk.x, pk.body.chunk.z, pk.body.chunk);

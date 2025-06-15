@@ -5,7 +5,7 @@ class ViewerClient extends NetworkEntity {
 
     handleLoginPacket(packet) {
         this.name = packet.body.name ?? 'unknown';
-        this.level = packet.body.level ?? 'test';
+        this.level = packet.body.level ?? 'rpg_world';
 
         this.worldX = 0;
         this.worldZ = 0;
