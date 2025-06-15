@@ -13,7 +13,7 @@ const UI = {
 
   setup: () => {
     UI.consoleContainer = document.getElementById("console-container");
-    UI.messageList = document.getElementById("console-messages");
+    UI.messageList = document.getElementById("log-output");
     UI.addressInput = document.getElementById("connection-input");
 
     // Statistic Elements
