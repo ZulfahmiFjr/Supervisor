@@ -56,7 +56,23 @@
         user-select: none; /* Mencegah teks di dalamnya untuk dipilih */
         -webkit-user-select: none; /* Untuk browser Safari/Chrome lama */
         cursor: grab; /* Mengubah kursor menjadi ikon tangan saat di atas peta */
+        flex: 1 1 auto;
+        max-width: 100%;
+        max-height: 100%;
+        overflow: hidden;
+        position: relative;
       }
+      #map-canvas {
+        display: block;
+        width: 100% !important;
+        height: 100% !important;
+      }
+      /* #main-layout {
+        height: 100vh;
+        display: flex;
+        flex-direction: row;
+        overflow: hidden;
+      } */
       #interface-overlay {
         display: none !important;
       }
@@ -65,7 +81,11 @@
 
   <body class="bg-pink-200 min-h-screen m-0" x-data="{ dashboardOpen: false }">
     <div id="interface-overlay">
-      <input type="text" id="connection-input" value="ws://localhost:27095" />
+      <input
+        type="text"
+        id="connection-input"
+        value="ws://192.168.9.65:27095"
+      />
       <span id="connection-light"></span>
       <span id="stats-viewers-count"></span>
       <span id="stats-fps-value"></span>
@@ -128,10 +148,12 @@
       <div class="flex flex-col flex-1 gap-2">
         <div
           id="canvas-container"
-          class="bg-black flex-1 flex rounded-md min-h-[200px]"
+          class="bg-black flex rounded-md min-h-[200px]"
         ></div>
 
-        <div class="flex flex-col rounded-md h-40 shrink-0 mb-14 md:mb-0">
+        <div
+          class="flex flex-col rounded-md h-40 shrink-0 mb-14 md:mb-0 overflow-hidden"
+        >
           <div
             id="log-output"
             class="rounded-t-md flex-1 bg-gray-800 p-2 overflow-y-auto text-white text-xs font-mono"
