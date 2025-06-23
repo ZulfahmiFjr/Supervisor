@@ -16,7 +16,7 @@ function performResize() {
         const consoleHeight = consoleContainer.getBoundingClientRect().height;
         const gap = parseFloat(getComputedStyle(leftColumn).gap);
         const safeViewportHeight = window.innerHeight;
-        const newCanvasHeight = safeViewportHeight - mainLayoutPadding - consoleHeight - gap;
+        const newCanvasHeight = window.innerHeight - consoleHeight - 24;
         canvasContainer.style.height = `${newCanvasHeight}px`;
         const bounds = canvasContainer.getBoundingClientRect();
         resizeCanvas(bounds.width, bounds.height);
