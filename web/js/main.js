@@ -32,7 +32,7 @@ function makeConnection() {
     if (ws && ws.readyState === WebSocket.OPEN) return;
     const addressInput = document.getElementById("connection-input");
     if (!addressInput) {
-        console.error("Fatal Error: Elemen #connection-input tidak ditemukan.");
+        console.error("Fatal Error: Element #connection-input not found.");
         return;
     }
     const address = addressInput.value;
