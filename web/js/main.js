@@ -6,6 +6,11 @@ let resizeTimeout;
 let mainLayout; // Variabel untuk nyimpen div layout utama
 let consoleContainer; // Variabel untuk nyimpen div konsol
 
+const supabase = window.supabase.createClient(
+    "https://hqbsoacvwsieepsmxebn.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxYnNvYWN2d3NpZWVwc214ZWJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3MDI5MzQsImV4cCI6MjA2NjI3ODkzNH0.9C_z9oU0VkhoIEHo0vntUng4ZSvec_F7ZCaFLKmZFE4"
+);
+
 function performResize() {
     const canvasContainer = document.getElementById("canvas-container");
     const consoleBox = document.getElementById("console-box");
@@ -83,6 +88,29 @@ function setup() {
         });
     }
     window.addEventListener("resize", windowResized);
+    const clearButton = document.getElementById("console-clear");
+    if (clearButton) {
+        clearButton.addEventListener("click", async () => {
+            if (confirm("Yakin ingin menghapus semua log dari Supabase?")) {
+                try {
+                    const { error } = await supabase
+                        .from("logs")
+                        .delete()
+                        .neq("id", "00000000-0000-0000-0000-000000000000");
+                    if (error) {
+                        console.error("Gagal menghapus log:", error);
+                        alert("Gagal menghapus log dari Supabase.");
+                    } else {
+                        document.getElementById("log-output").innerHTML = "";
+                        alert("Semua log berhasil dihapus dari Supabase.");
+                    }
+                } catch (err) {
+                    console.error("Terjadi kesalahan:", err);
+                    alert("Terjadi kesalahan saat menghapus log.");
+                }
+            }
+        });
+    }
 }
 
 function draw() {
