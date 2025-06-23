@@ -2,6 +2,11 @@ let zoomPath = [];
 let hovering = [];
 let followPlayer = null;
 
+const supabaseClient = window.supabase.createClient(
+    "https://hqbsoacvwsieepsmxebn.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxYnNvYWN2d3NpZWVwc214ZWJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3MDI5MzQsImV4cCI6MjA2NjI3ODkzNH0.9C_z9oU0VkhoIEHo0vntUng4ZSvec_F7ZCaFLKmZFE4"
+);
+
 const UI = {
     fpsTracked: [],
 
@@ -140,7 +145,22 @@ const UI = {
         UI.handleMovement();
     },
 
-    log: (message) => {
+    loadLogsFromSupabase: async () => {
+        const { data, error } = await supabaseClient.from("logs").select("*").order("timestamp", { ascending: true });
+        if (error) {
+            console.error("Failed to fetch log data from Supabase: ", error.message);
+            return;
+        }
+        data.forEach((row) => {
+            let messageElement = document.createElement("p");
+            messageElement.classList.add("message-list__message", "transition-all");
+            messageElement.innerHTML = row.message;
+            UI.messageList.appendChild(messageElement);
+        });
+        UI.messageList.scrollTop = UI.messageList.scrollHeight;
+    },
+
+    log: async (message) => {
         const now = new Date();
         const dateStr = now.toLocaleDateString("id-ID");
         const timeStr = now.toLocaleTimeString("id-ID");
@@ -152,6 +172,10 @@ const UI = {
         messageElement.innerHTML = fullMessage;
         UI.messageList.appendChild(messageElement);
         UI.messageList.scrollTop = UI.messageList.scrollHeight;
+        const { error } = await supabaseClient.from("logs").insert([{ message: fullMessage }]);
+        if (error) {
+            console.error("Failed to save to Supabase: ", error.message);
+        }
     },
 
     clearConsole: () => {

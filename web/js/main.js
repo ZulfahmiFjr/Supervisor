@@ -63,6 +63,7 @@ function setup() {
         resizeCanvas(canvasContainer.clientWidth, canvasContainer.clientHeight);
     });
     observer.observe(canvasContainer);
+    UI.loadLogsFromSupabase();
 }
 
 function draw() {
