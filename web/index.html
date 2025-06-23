@@ -1,199 +1,165 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
-    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
-    <link rel="stylesheet" href="/assets/css/style.css" />
-    <title>Supervisor Dashboard</title>
+        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+        <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+        <link rel="stylesheet" href="/assets/css/style.css" />
+        <title>Supervisor Dashboard</title>
 
-    <link
-      href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css"
-      rel="stylesheet"
-    />
+        <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet" />
 
-    <script
-      src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.8.2/dist/alpine.min.js"
-      defer
-    ></script>
+        <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.8.2/dist/alpine.min.js" defer></script>
 
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/2.2.1/js.cookie.min.js"
-      integrity="sha512-Meww2sXqNHxI1+5Dyh/9KAtvI9RZSA4c1K2k5iL02oiPO/RH3Q30L3M1albtqMg50u4gRTYdV4EXOQqXEI336A=="
-      crossorigin="anonymous"
-    ></script>
-    <script src="js/p5.js" type="text/javascript"></script>
-    <script src="js/ui_controller.js" type="text/javascript"></script>
-    <script src="js/face.js" type="text/javascript"></script>
-    <script src="js/flat_color_blocks.js" type="text/javascript"></script>
-    <script src="js/textured_blocks.js" type="text/javascript"></script>
-    <script src="js/pocketcore.js" type="text/javascript"></script>
-    <script src="js/chunk_manager.js" type="text/javascript"></script>
-    <script src="js/entity_manager.js" type="text/javascript"></script>
-    <script src="js/renderer.js" type="text/javascript"></script>
-    <script src="js/main.js" type="text/javascript"></script>
-    <style>
-      /* Menambahkan style untuk scrollbar agar serasi dengan tema gelap */
-      ::-webkit-scrollbar {
-        width: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #1e293b;
-      } /* slate-800 */
-      ::-webkit-scrollbar-thumb {
-        background: #4f46e5;
-        border-radius: 10px;
-      } /* indigo-600 */
-      html,
-      body {
-        height: 100%;
-        margin: 0;
-      }
-      #canvas-container {
-        user-select: none; /* Mencegah teks di dalamnya untuk dipilih */
-        -webkit-user-select: none; /* Untuk browser Safari/Chrome lama */
-        cursor: grab; /* Mengubah kursor menjadi ikon tangan saat di atas peta */
-        flex: 1 1 auto;
-        max-width: 100%;
-        max-height: 100%;
-        overflow: hidden;
-        position: relative;
-      }
-      #map-canvas {
-        display: block;
-        width: 100% !important;
-        height: 100% !important;
-      }
-      /* #main-layout {
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/2.2.1/js.cookie.min.js"
+            integrity="sha512-Meww2sXqNHxI1+5Dyh/9KAtvI9RZSA4c1K2k5iL02oiPO/RH3Q30L3M1albtqMg50u4gRTYdV4EXOQqXEI336A=="
+            crossorigin="anonymous"
+        ></script>
+        <script src="js/p5.js" type="text/javascript"></script>
+        <script src="js/ui_controller.js" type="text/javascript"></script>
+        <script src="js/face.js" type="text/javascript"></script>
+        <script src="js/flat_color_blocks.js" type="text/javascript"></script>
+        <script src="js/textured_blocks.js" type="text/javascript"></script>
+        <script src="js/pocketcore.js" type="text/javascript"></script>
+        <script src="js/chunk_manager.js" type="text/javascript"></script>
+        <script src="js/entity_manager.js" type="text/javascript"></script>
+        <script src="js/renderer.js" type="text/javascript"></script>
+        <script src="js/main.js" type="text/javascript"></script>
+        <style>
+            /* Menambahkan style untuk scrollbar agar serasi dengan tema gelap */
+            ::-webkit-scrollbar {
+                width: 8px;
+            }
+            ::-webkit-scrollbar-track {
+                background: #1e293b;
+            } /* slate-800 */
+            ::-webkit-scrollbar-thumb {
+                background: #4f46e5;
+                border-radius: 10px;
+            } /* indigo-600 */
+            html,
+            body {
+                /* height: 100%; */
+                height: auto;
+                margin: 0;
+                min-height: 100%;
+            }
+            #canvas-container {
+                user-select: none; /* Mencegah teks di dalamnya untuk dipilih */
+                -webkit-user-select: none; /* Untuk browser Safari/Chrome lama */
+                cursor: grab; /* Mengubah kursor menjadi ikon tangan saat di atas peta */
+                flex: 1 1 auto;
+                max-width: 100%;
+                max-height: 100%;
+                overflow: hidden;
+                position: relative;
+            }
+            #map-canvas {
+                display: block;
+                width: 100% !important;
+                height: 100% !important;
+            }
+            /* #main-layout {
         height: 100vh;
         display: flex;
         flex-direction: row;
         overflow: hidden;
       } */
-      #interface-overlay {
-        display: none !important;
-      }
-    </style>
-  </head>
+            #interface-overlay {
+                display: none !important;
+            }
+        </style>
+    </head>
 
-  <body class="bg-pink-200 min-h-screen m-0" x-data="{ dashboardOpen: false }">
-    <div id="interface-overlay">
-      <input
-        type="text"
-        id="connection-input"
-        value="ws://192.168.9.65:27095"
-      />
-      <span id="connection-light"></span>
-      <span id="stats-viewers-count"></span>
-      <span id="stats-fps-value"></span>
-      <span id="stats-players-value"></span>
-      <span id="stats-entities-value"></span>
-      <span id="stats-chunks-value"></span>
-      <span id="stats-buffers-value"></span>
-      <span id="stats-buffers-rendered-value"></span>
-      <div id="console-messages"></div>
-      <input type="checkbox" id="render-buffer-outlines" />
-      <input type="checkbox" id="render-axis-lines" />
-      <input type="checkbox" id="render-player-markers" />
-      <input type="checkbox" id="render-chunk-grid" />
-      <input type="checkbox" id="render-mouse-tooltip" />
-      <input type="checkbox" id="render-crosshair" />
-      <input type="number" id="x-offset-input" />
-      <input type="number" id="z-offset-input" />
-      <input type="number" id="scale-input" />
-    </div>
-    <button
-      class="fixed top-4 right-4 z-50 bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded md:hidden"
-      @click="dashboardOpen = true"
-    >
-      &#9776;
-    </button>
-
-    <div
-      class="fixed inset-0 bg-gray-800 text-white text-xl p-4 z-40 flex flex-col space-y-4 md:hidden overflow-y-auto"
-      x-show="dashboardOpen"
-      x-transition
-      @click.away="dashboardOpen = false"
-    >
-      <button
-        class="self-end text-white text-2xl font-bold"
-        @click="dashboardOpen = false"
-      >
-        ✕
-      </button>
-
-      <div class="grid grid-cols-1 gap-2">
-        <button class="bg-indigo-600 hover:bg-indigo-700 py-2 rounded">
-          Players
-        </button>
-        <button class="bg-indigo-600 hover:bg-indigo-700 py-2 rounded">
-          Statistics
-        </button>
-        <button class="bg-indigo-600 hover:bg-indigo-700 py-2 rounded">
-          Settings
-        </button>
-      </div>
-
-      <div
-        class="flex-1 flex items-center justify-center text-center border-t border-white/20 pt-4"
-      >
-        DASHBOARD VIEWER (Mobile)
-      </div>
-    </div>
-
-    <div class="flex flex-col md:flex-row h-screen gap-2 p-2">
-      <div class="flex flex-col flex-1 gap-2">
-        <div
-          id="canvas-container"
-          class="bg-black flex rounded-md min-h-[200px]"
-        ></div>
-
-        <div
-          class="flex flex-col rounded-md h-40 shrink-0 mb-14 md:mb-0 overflow-hidden"
+    <body class="bg-pink-200 min-h-screen m-0" x-data="{ dashboardOpen: false }">
+        <div id="interface-overlay">
+            <input type="text" id="connection-input" value="ws://192.168.1.5:27095" />
+            <span id="connection-light"></span>
+            <span id="stats-viewers-count"></span>
+            <span id="stats-fps-value"></span>
+            <span id="stats-players-value"></span>
+            <span id="stats-entities-value"></span>
+            <span id="stats-chunks-value"></span>
+            <span id="stats-buffers-value"></span>
+            <span id="stats-buffers-rendered-value"></span>
+            <div id="console-messages"></div>
+            <input type="checkbox" id="render-buffer-outlines" />
+            <input type="checkbox" id="render-axis-lines" />
+            <input type="checkbox" id="render-player-markers" />
+            <input type="checkbox" id="render-chunk-grid" />
+            <input type="checkbox" id="render-mouse-tooltip" />
+            <input type="checkbox" id="render-crosshair" />
+            <input type="number" id="x-offset-input" />
+            <input type="number" id="z-offset-input" />
+            <input type="number" id="scale-input" />
+        </div>
+        <button
+            class="fixed top-4 right-4 z-50 bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded md:hidden"
+            @click="dashboardOpen = true"
         >
-          <div
-            id="log-output"
-            class="rounded-t-md flex-1 bg-gray-800 p-2 overflow-y-auto text-white text-xs font-mono"
-          ></div>
-          <input
-            id="console-input"
-            type="text"
-            placeholder="Console Input..."
-            class="w-full bg-white text-black text-center py-1 rounded-b-md"
-          />
-        </div>
-      </div>
-
-      <div
-        class="hidden md:flex w-1/4 bg-gray-500 rounded-md p-4 text-white text-xl font-semibold flex-col items-center"
-      >
-        <div class="grid grid-cols-3 gap-2 mb-4 w-full">
-          <button
-            class="bg-indigo-600 hover:bg-indigo-700 text-sm py-1 rounded shadow w-full"
-          >
-            Players
-          </button>
-          <button
-            class="bg-indigo-600 hover:bg-indigo-700 text-sm py-1 rounded shadow w-full"
-          >
-            Statistics
-          </button>
-          <button
-            class="bg-indigo-600 hover:bg-indigo-700 text-sm py-1 rounded shadow w-full"
-          >
-            Settings
-          </button>
-        </div>
+            &#9776;
+        </button>
 
         <div
-          class="flex-1 flex items-center justify-center border-t border-white/20 w-full pt-4 text-center"
+            class="fixed inset-0 bg-gray-800 text-white text-xl p-4 z-40 flex flex-col space-y-4 md:hidden overflow-y-auto"
+            x-show="dashboardOpen"
+            x-transition
+            @click.away="dashboardOpen = false"
         >
-          DASHBOARD VIEWER
+            <button class="self-end text-white text-2xl font-bold" @click="dashboardOpen = false">✕</button>
+
+            <div class="grid grid-cols-1 gap-2">
+                <button class="bg-indigo-600 hover:bg-indigo-700 py-2 rounded">Players</button>
+                <button class="bg-indigo-600 hover:bg-indigo-700 py-2 rounded">Statistics</button>
+                <button class="bg-indigo-600 hover:bg-indigo-700 py-2 rounded">Settings</button>
+            </div>
+
+            <div class="flex-1 flex items-center justify-center text-center border-t border-white/20 pt-4">
+                DASHBOARD VIEWER (Mobile)
+            </div>
         </div>
-      </div>
-    </div>
-  </body>
+
+        <div class="flex flex-col md:flex-row h-screen gap-2 p-2">
+            <div class="flex flex-col flex-1 gap-2">
+                <div id="canvas-container" class="bg-black flex rounded-md min-h-[200px]"></div>
+
+                <div class="flex flex-col rounded-md h-40 shrink-0 mb-14 md:mb-0 overflow-hidden">
+                    <div
+                        id="log-output"
+                        class="rounded-t-md flex-1 bg-gray-800 p-2 overflow-y-auto text-white text-xs font-mono"
+                    ></div>
+                    <input
+                        id="console-input"
+                        type="text"
+                        placeholder="Console Input..."
+                        class="w-full bg-white text-black text-center py-1 rounded-b-md"
+                    />
+                </div>
+            </div>
+
+            <div
+                class="hidden md:flex w-1/4 bg-gray-500 rounded-md p-4 text-white text-xl font-semibold flex-col items-center"
+            >
+                <div class="grid grid-cols-3 gap-2 mb-4 w-full">
+                    <button class="bg-indigo-600 hover:bg-indigo-700 text-sm py-1 rounded shadow w-full">
+                        Players
+                    </button>
+                    <button class="bg-indigo-600 hover:bg-indigo-700 text-sm py-1 rounded shadow w-full">
+                        Statistics
+                    </button>
+                    <button class="bg-indigo-600 hover:bg-indigo-700 text-sm py-1 rounded shadow w-full">
+                        Settings
+                    </button>
+                </div>
+
+                <div class="flex-1 flex items-center justify-center border-t border-white/20 w-full pt-4 text-center">
+                    DASHBOARD VIEWER
+                </div>
+            </div>
+        </div>
+    </body>
 </html>
