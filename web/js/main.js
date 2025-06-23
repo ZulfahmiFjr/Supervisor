@@ -7,7 +7,7 @@ let mainLayout; // Variabel untuk nyimpen div layout utama
 let consoleContainer; // Variabel untuk nyimpen div konsol
 
 function performResize() {
-    console.log("Menghitung perubahan ukuran ketinggian secara manual...");
+    console.log("Executing manual height calculation resize...");
     if (mainLayout && consoleContainer) {
         const leftColumn = document.getElementById("canvas-container").parentElement;
         const canvasContainer = document.getElementById("canvas-container");
