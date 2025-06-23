@@ -7,19 +7,17 @@ let mainLayout; // Variabel untuk nyimpen div layout utama
 let consoleContainer; // Variabel untuk nyimpen div konsol
 
 function performResize() {
-    console.log("Executing manual height calculation resize...");
-    if (mainLayout && consoleContainer) {
-        const leftColumn = document.getElementById("canvas-container").parentElement;
-        const canvasContainer = document.getElementById("canvas-container");
-        const mainLayoutStyles = getComputedStyle(mainLayout);
-        const mainLayoutPadding = parseFloat(mainLayoutStyles.paddingTop) + parseFloat(mainLayoutStyles.paddingBottom);
-        const consoleHeight = consoleContainer.getBoundingClientRect().height;
-        const gap = parseFloat(getComputedStyle(leftColumn).gap);
-        const safeViewportHeight = window.innerHeight;
-        const newCanvasHeight = window.innerHeight - consoleHeight - 24;
-        canvasContainer.style.height = `${newCanvasHeight}px`;
-        const bounds = canvasContainer.getBoundingClientRect();
-        resizeCanvas(bounds.width, bounds.height);
+    const canvasContainer = document.getElementById("canvas-container");
+    const consoleBox = document.getElementById("console-box");
+
+    if (canvasContainer && consoleBox) {
+        requestAnimationFrame(() => {
+            const consoleHeight = consoleBox.getBoundingClientRect().height;
+            const newCanvasHeight = window.innerHeight - consoleHeight - 16;
+            canvasContainer.style.height = `${newCanvasHeight}px`;
+            const bounds = canvasContainer.getBoundingClientRect();
+            resizeCanvas(bounds.width, bounds.height);
+        });
     }
 }
 
@@ -46,7 +44,7 @@ function makeConnection() {
 function setup() {
     const canvasContainer = document.getElementById("canvas-container");
     mainLayout = canvasContainer?.parentElement?.parentElement;
-    consoleContainer = document.getElementById("console-input")?.parentElement;
+    consoleContainer = document.getElementById("console-box");
     var cnv = createCanvas(canvasContainer.offsetWidth, canvasContainer.offsetHeight);
     cnv.id("map-canvas");
     cnv.parent("canvas-container");
@@ -64,6 +62,27 @@ function setup() {
     });
     observer.observe(canvasContainer);
     UI.loadLogsFromSupabase();
+    const inputBox = document.getElementById("console-input");
+    const sendButton = document.getElementById("console-send");
+    inputBox.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+            const text = inputBox.value.trim();
+            if (text.length > 0) {
+                UI.log(text);
+                inputBox.value = "";
+            }
+        }
+    });
+    if (sendButton) {
+        sendButton.addEventListener("click", () => {
+            const text = inputBox.value.trim();
+            if (text.length > 0) {
+                UI.log(text);
+                inputBox.value = "";
+            }
+        });
+    }
+    window.addEventListener("resize", windowResized);
 }
 
 function draw() {

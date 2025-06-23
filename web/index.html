@@ -88,6 +88,12 @@
                 width: 100% !important;
                 height: 100% !important;
             }
+            #console-input {
+                height: 32px !important;
+                padding-top: 0 !important;
+                padding-bottom: 0 !important;
+                line-height: 1 !important;
+            }
             /* #main-layout {
         height: 100vh;
         display: flex;
@@ -151,18 +157,26 @@
         <div class="flex flex-col md:flex-row gap-2 p-2">
             <div class="flex flex-col flex-1 gap-2">
                 <div id="canvas-container" class="bg-black flex rounded-md min-h-[200px]"></div>
-
-                <div class="flex flex-col rounded-md h-40 shrink-0 mb-14 md:mb-0 overflow-hidden">
+                <div id="console-box" class="flex flex-col h-40 shrink-0 mb-14 md:mb-0 overflow-hidden pb-2">
                     <div
                         id="log-output"
                         class="rounded-t-md flex-1 bg-gray-800 p-2 overflow-y-auto text-white text-xs font-mono"
                     ></div>
-                    <input
-                        id="console-input"
-                        type="text"
-                        placeholder="Console Input..."
-                        class="w-full bg-white text-black text-center py-1 rounded-b-md"
-                    />
+                    <div class="flex items-center bg-white px-1 py-0.5 rounded-b-md overflow-hidden">
+                        <!-- <div class="flex items-center bg-white px-1 mt-1 mb-1"> -->
+                        <input
+                            id="console-input"
+                            type="text"
+                            placeholder="Console Input..."
+                            class="flex-1 h-7 px-2 mt-0.5 mb-0.5 text-sm text-black text-center bg-white placeholder-gray-600 focus:outline-none rounded-md"
+                        />
+                        <button
+                            id="console-send"
+                            class="ml-1 px-4 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md"
+                        >
+                            Send
+                        </button>
+                    </div>
                 </div>
             </div>
 
