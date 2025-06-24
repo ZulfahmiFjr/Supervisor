@@ -9,14 +9,23 @@ let consoleContainer; // Variabel untuk nyimpen div konsol
 function performResize() {
     const canvasContainer = document.getElementById("canvas-container");
     const consoleBox = document.getElementById("console-box");
-
     if (canvasContainer && consoleBox) {
         requestAnimationFrame(() => {
+            const bodyStyles = window.getComputedStyle(document.body);
+            const bodyPaddingTop = parseFloat(bodyStyles.paddingTop) || 0;
+            const bodyPaddingBottom = parseFloat(bodyStyles.paddingBottom) || 0;
+            const gap = 8;
             const consoleHeight = consoleBox.getBoundingClientRect().height;
-            const newCanvasHeight = window.innerHeight - consoleHeight - 16;
+            const newCanvasHeight = window.innerHeight - bodyPaddingTop - bodyPaddingBottom - consoleHeight - gap;
             canvasContainer.style.height = `${newCanvasHeight}px`;
             const bounds = canvasContainer.getBoundingClientRect();
-            resizeCanvas(bounds.width, bounds.height);
+            if (typeof resizeCanvas === "function") {
+                resizeCanvas(bounds.width, bounds.height);
+            }
+            if (renderer && renderer.ViewPort && typeof renderer.ViewPort.setOffsets === "function") {
+                renderer.ViewPort.setOffsets(bounds.width / 2, bounds.height / 2);
+                console.log("Map centered via setOffsets:", bounds.width / 2, bounds.height / 2);
+            }
         });
     }
 }

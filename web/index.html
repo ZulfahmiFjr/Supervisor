@@ -34,7 +34,8 @@
         <script>
             function adjustCanvasHeight() {
                 const canvasContainer = document.getElementById("canvas-container");
-                const consoleBox = document.getElementById("console-input")?.parentElement;
+                // const consoleBox = document.getElementById("console-input")?.parentElement;
+                const consoleBox = document.getElementById("console-box");
 
                 if (canvasContainer && consoleBox) {
                     const totalHeight = window.innerHeight; // tinggi layar aktual
@@ -51,23 +52,106 @@
         </script>
 
         <style>
-            /* Menambahkan style untuk scrollbar agar serasi dengan tema gelap */
             ::-webkit-scrollbar {
                 width: 8px;
             }
             ::-webkit-scrollbar-track {
                 background: #1e293b;
-            } /* slate-800 */
+            }
             ::-webkit-scrollbar-thumb {
                 background: #4f46e5;
                 border-radius: 10px;
-            } /* indigo-600 */
+            }
             html,
             body {
-                /* height: 100%; */
                 height: auto;
                 margin: 0;
                 min-height: 100%;
+            }
+
+            body {
+                background-color: #0f172a; /* Warna slate-900 dari Tailwind */
+                color: #cbd5e1; /* Warna slate-300 untuk teks default */
+                font-family: "Segoe UI", system-ui, -apple-system, sans-serif; /* Font yang lebih bersih */
+                padding: 0.5rem;
+            }
+
+            #canvas-container,
+            #console-box,
+            .hidden.md\:flex.w-1\/4 {
+                background-color: #1e293b;
+                border: 1px solid #334155;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                border-radius: 0.75rem;
+            }
+
+            #log-output {
+                background-color: #0f172a !important;
+                border-bottom: 1px solid #334155;
+                border-radius: 0.75rem 0.75rem 0 0;
+            }
+
+            #console-input-wrapper {
+                background-color: #1e293b !important;
+                border-radius: 0 0 0.75rem 0.75rem;
+            }
+
+            #console-input {
+                background-color: #334155 !important;
+                color: #e2e8f0 !important;
+                border: 1px solid #475569;
+                border-radius: 6px !important;
+                transition: all 0.2s ease-in-out;
+            }
+
+            #console-input::placeholder {
+                color: #94a3b8;
+            }
+
+            #console-input:focus {
+                border-color: #4f46e5;
+                box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.4);
+            }
+
+            button[class*="bg-indigo-600"] {
+                background-color: #4338ca;
+                font-weight: 600;
+                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+                border: 1px solid #4f46e5;
+                transition: all 0.2s ease-in-out;
+            }
+
+            button[class*="bg-indigo-600"]:hover {
+                background-color: #4f46e5 !important;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+            }
+
+            #console-clear {
+                background-color: #dc2626 !important;
+                border: 1px solid #ef4444;
+                transition: all 0.2s ease-in-out;
+            }
+
+            #console-clear:hover {
+                background-color: #ef4444 !important;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+            }
+
+            div[x-show="dashboardOpen"] {
+                background-color: rgba(30, 41, 59, 0.8) !important;
+                -webkit-backdrop-filter: blur(8px);
+                backdrop-filter: blur(8px);
+            }
+
+            ::-webkit-scrollbar-thumb {
+                background: #4f46e5;
+                border-radius: 10px;
+                border: 2px solid #1e293b;
+            }
+            ::-webkit-scrollbar-thumb:hover {
+                background: #6366f1;
             }
             @media (max-width: 768px) {
                 #console-input {
@@ -75,9 +159,9 @@
                 }
             }
             #canvas-container {
-                user-select: none; /* Mencegah teks di dalamnya untuk dipilih */
-                -webkit-user-select: none; /* Untuk browser Safari/Chrome lama */
-                cursor: grab; /* Mengubah kursor menjadi ikon tangan saat di atas peta */
+                user-select: none;
+                -webkit-user-select: none;
+                cursor: grab;
                 flex: 1 1 auto;
                 max-width: 100%;
                 max-height: 100%;
@@ -95,19 +179,13 @@
                 padding-bottom: 0 !important;
                 line-height: 1 !important;
             }
-            /* #main-layout {
-        height: 100vh;
-        display: flex;
-        flex-direction: row;
-        overflow: hidden;
-      } */
             #interface-overlay {
                 display: none !important;
             }
         </style>
     </head>
 
-    <body class="bg-pink-200 min-h-screen m-0" x-data="{ dashboardOpen: false }">
+    <body class="min-h-screen m-0" x-data="{ dashboardOpen: false }">
         <div id="interface-overlay">
             <input type="text" id="connection-input" value="ws://192.168.1.5:27095" />
             <span id="connection-light"></span>
@@ -155,10 +233,10 @@
             </div>
         </div>
 
-        <div class="flex flex-col md:flex-row gap-2 p-2">
+        <div class="flex flex-col md:flex-row gap-2">
             <div class="flex flex-col flex-1 gap-2">
                 <div id="canvas-container" class="bg-black flex rounded-md min-h-[200px]"></div>
-                <div id="console-box" class="flex flex-col h-40 shrink-0 mb-14 md:mb-0 overflow-hidden pb-2 rounded-md">
+                <div id="console-box" class="flex flex-col h-40 shrink-0 mb-14 md:mb-0 overflow-hidden rounded-md">
                     <div
                         id="log-output"
                         class="rounded-t-md flex-1 bg-gray-800 p-2 overflow-y-auto text-white text-xs font-mono"
