@@ -4,3 +4,5 @@ node_modules
 cache
 skins
 /web/index*.html
+/web/js/supabase-config.js
+/web/js/main*.js

@@ -6,11 +6,6 @@ let resizeTimeout;
 let mainLayout; // Variabel untuk nyimpen div layout utama
 let consoleContainer; // Variabel untuk nyimpen div konsol
 
-const supabase = window.supabase.createClient(
-    "https://hqbsoacvwsieepsmxebn.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxYnNvYWN2d3NpZWVwc214ZWJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3MDI5MzQsImV4cCI6MjA2NjI3ODkzNH0.9C_z9oU0VkhoIEHo0vntUng4ZSvec_F7ZCaFLKmZFE4"
-);
-
 function performResize() {
     const canvasContainer = document.getElementById("canvas-container");
     const consoleBox = document.getElementById("console-box");
