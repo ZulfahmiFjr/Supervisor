@@ -1,5 +1,6 @@
 .DS_STORE
-
+supervisor.stdout.log
+supervisor.stderr.log
 node_modules
 cache
 skins

@@ -21,12 +21,16 @@ app.get("/", (req, res) => {
     res.sendFile(__dirname + "/web/index.html")
 });
 
-app.listen(8080);
+const WEB_PORT = Number(process.env.ATLAS_WEB_PORT ?? 8080);
+const WS_PORT  = Number(process.env.ATLAS_WS_PORT ?? 27095);
+const HOST     = String(process.env.ATLAS_HOST ?? "127.0.0.1");
 
-/*
- * Create the websocket server and listen for connections
- */
-const wss = new WebSocket.Server({ port: 27095 });
+app.listen(WEB_PORT, HOST, () => {
+    logger.info(`Web listening on http://${HOST}:${WEB_PORT}`);
+});
+
+const wss = new WebSocket.Server({ host: HOST, port: WS_PORT });
+logger.info(`WS listening on ws://${HOST}:${WS_PORT}`);
 
 /*
  * Configure data folders
