@@ -3,7 +3,9 @@ const Packet = require("../network/packet");
 const coord_hash = require("../utils/coord_hash.js");
 const _NetworkEntityStorageLogic = require("../network/network_entity_storage.js");
 const Handler = require("../network/handler.js");
-const md5 = require('blueimp-md5');
+const crypto = require("node:crypto");
+
+const md5hex = (input) => crypto.createHash("md5").update(input, "utf8").digest("hex");
 
 class Level {
 
@@ -128,7 +130,7 @@ class Level {
 
             if(!packet) {
                 packet = Packet.Sector.encode(sector, []);
-                sectorHash = md5(packet);
+                sectorHash = md5hex(packet);
                 this.cachedPackets[sectorHash] = packet;
             }
 
