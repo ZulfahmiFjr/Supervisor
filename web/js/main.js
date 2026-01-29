@@ -59,8 +59,6 @@ async function atlasInitWs() {
     }
     const url = await atlasResolveWsUrl();
     addressInput.value = url;
-    // WS mentah
-    makeConnection(url);
     // PocketCore WS yg ada reconnect / subscribe / dll
     connectPocketCore(
         url,
@@ -73,15 +71,6 @@ async function atlasInitWs() {
             document.getElementById("connection-light").classList.add("disconnected-light");
         }
     );
-}
-
-function makeConnection(address) {
-    if (ws && ws.readyState === WebSocket.OPEN) return;
-    console.log(`Attempting to connect to ${address}...`);
-    ws = new WebSocket(address);
-    ws.onopen = () => console.log("SUCCESS: WebSocket Connection Established.");
-    ws.onclose = () => console.warn("WebSocket Connection Closed.");
-    ws.onerror = (err) => console.error("WebSocket Error: ", err);
 }
 
 function setup() {

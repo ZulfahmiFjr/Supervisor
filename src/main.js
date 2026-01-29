@@ -1,5 +1,6 @@
 const fs = require("fs");
 const WebSocket = require('ws');
+const os = require("os");
 
 const logger = require('./utils/logger.js');
 const Supervisor = require('./supervisor.js');
@@ -26,6 +27,25 @@ const WS_PORT  = Number(process.env.ATLAS_WS_PORT ?? 27095);
 const HOST     = String(process.env.ATLAS_HOST ?? "127.0.0.1");
 // buat akses LAN dari HP
 const BIND_HOST = String(process.env.ATLAS_BIND_HOST ?? "0.0.0.0");
+
+function guessLanIp() {
+    const nets = os.networkInterfaces();
+    for (const name of Object.keys(nets)) {
+        for (const net of nets[name] || []) {
+            if (net.family === "IPv4" && !net.internal) {
+                return net.address;
+            }
+        }
+    }
+    return null;
+}
+
+const lanIp = guessLanIp();
+// bind vs cara akses
+logger.info(`Web bind: http://${BIND_HOST}:${WEB_PORT}`);
+if (lanIp) logger.info(`Web LAN:  http://${lanIp}:${WEB_PORT}`);
+logger.info(`WS bind:  ws://${BIND_HOST}:${WS_PORT}`);
+if (lanIp) logger.info(`WS LAN:   ws://${lanIp}:${WS_PORT}`);
 
 // kirim ke frontend supaya tau port WS dan info lain kalo perlu
 const DASH_CONFIG = {
