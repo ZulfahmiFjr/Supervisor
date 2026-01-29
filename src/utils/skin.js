@@ -1,7 +1,6 @@
 const Jimp = require('jimp');
 const fs = require('fs');
 const Packet = require('../network/packet');
-const converter = require('hex2dec');
 const logger = require('./logger');
 
 const Skin = {
@@ -35,13 +34,12 @@ const Skin = {
                 for (let position = pixelArray.length - 1; position >= 0; position--) {
                     let x = position % 64;
                     let y = (position - x) / 64;
-                    let color = string_chop(pixelArray.pop(), 2).map((value) => {
-                        return converter.hexToDec(value);
-                    });
-                    let alpha = color.pop();
-                    alpha = ((~(parseInt(alpha))) & 0xff) >> 1;
-                    let decColor = parseInt(converter.hexToDec(color.join('')));
-                    image.setPixelColor(Math.max(0, Math.min(decColor, 4294967295)), x, y);
+                    const bytes = string_chop(pixelArray.pop(), 2).map((hex) => parseInt(hex, 16));
+                    let a = bytes.pop(); // alpha byte
+                    a = ((~a) & 0xff) >> 1; // keep logic
+                    const [r, g, b] = bytes;
+                    const decColor = Jimp.rgbaToInt(r, g, b, a);
+                    image.setPixelColor(decColor, x, y);
                 }
 
                 if(cb) cb(image);
