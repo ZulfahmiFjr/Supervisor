@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "chalk": "^4.1.1",
     "express": "^4.17.1",
     "jimp": "^0.16.1",
     "ws": "^7.4.5"
