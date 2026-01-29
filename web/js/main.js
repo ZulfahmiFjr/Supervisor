@@ -35,14 +35,48 @@ function windowResized() {
     resizeTimeout = setTimeout(performResize, 100); // Jeda
 }
 
-function makeConnection() {
-    if (ws && ws.readyState === WebSocket.OPEN) return;
+async function atlasResolveWsUrl() {
+    const wsProto = window.location.protocol === "https:" ? "wss" : "ws";
+    const host = window.location.hostname;
+    let wsPort = 27095; // fallback default
+    try {
+        const res = await fetch("/config.json", { cache: "no-store" });
+        if (res.ok) {
+            const cfg = await res.json();
+            if (typeof cfg.wsPort === "number") wsPort = cfg.wsPort;
+        }
+    } catch (e) {
+        // fallback tetap jalan
+    }
+    return `${wsProto}://${host}:${wsPort}`;
+}
+
+async function atlasInitWs() {
     const addressInput = document.getElementById("connection-input");
     if (!addressInput) {
         console.error("Fatal Error: Element #connection-input not found.");
         return;
     }
-    const address = addressInput.value;
+    const url = await atlasResolveWsUrl();
+    addressInput.value = url;
+    // WS mentah
+    makeConnection(url);
+    // PocketCore WS yg ada reconnect / subscribe / dll
+    connectPocketCore(
+        url,
+        () => {
+            document.getElementById("connection-light").classList.remove("disconnected-light");
+            document.getElementById("connection-light").classList.add("connected-light");
+        },
+        () => {
+            document.getElementById("connection-light").classList.remove("connected-light");
+            document.getElementById("connection-light").classList.add("disconnected-light");
+        }
+    );
+}
+
+function makeConnection(address) {
+    if (ws && ws.readyState === WebSocket.OPEN) return;
     console.log(`Attempting to connect to ${address}...`);
     ws = new WebSocket(address);
     ws.onopen = () => console.log("SUCCESS: WebSocket Connection Established.");
@@ -65,7 +99,8 @@ function setup() {
     keyPressed = UI.keyPressed;
     mouseDragged = UI.mouseDragged;
     mouseReleased = UI.mouseReleased;
-    makeConnection();
+    atlasInitWs();
+    // makeConnection();
     const observer = new ResizeObserver(() => {
         resizeCanvas(canvasContainer.clientWidth, canvasContainer.clientHeight);
     });

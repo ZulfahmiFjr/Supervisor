@@ -25,6 +25,18 @@ const WEB_PORT = Number(process.env.ATLAS_WEB_PORT ?? 8080);
 const WS_PORT  = Number(process.env.ATLAS_WS_PORT ?? 27095);
 const HOST     = String(process.env.ATLAS_HOST ?? "127.0.0.1");
 
+// kirim ke frontend supaya tau port WS dan info lain kalo perlu
+const DASH_CONFIG = {
+  wsPort: WS_PORT,
+  webPort: WEB_PORT
+};
+
+app.get("/config.json", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.setHeader("Cache-Control", "no-store");
+  res.end(JSON.stringify(DASH_CONFIG));
+});
+
 app.listen(WEB_PORT, HOST, () => {
     logger.info(`Web listening on http://${HOST}:${WEB_PORT}`);
 });

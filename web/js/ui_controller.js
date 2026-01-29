@@ -73,19 +73,18 @@ const UI = {
             renderer.ViewPort.setScale(parseFloat(event.target.value));
         });
 
-        let address = UI.addressInput.value;
-
-        connectPocketCore(
-            address,
-            () => {
-                document.getElementById("connection-light").classList.remove("disconnected-light");
-                document.getElementById("connection-light").classList.add("connected-light");
-            },
-            () => {
-                document.getElementById("connection-light").classList.remove("connected-light");
-                document.getElementById("connection-light").classList.add("disconnected-light");
-            }
-        );
+        // let address = UI.addressInput.value;
+        // connectPocketCore(
+        //     address,
+        //     () => {
+        //         document.getElementById("connection-light").classList.remove("disconnected-light");
+        //         document.getElementById("connection-light").classList.add("connected-light");
+        //     },
+        //     () => {
+        //         document.getElementById("connection-light").classList.remove("connected-light");
+        //         document.getElementById("connection-light").classList.add("disconnected-light");
+        //     }
+        // );
     },
 
     prevOffsetX: null,
