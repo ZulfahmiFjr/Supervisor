@@ -24,6 +24,8 @@ app.get("/", (req, res) => {
 const WEB_PORT = Number(process.env.ATLAS_WEB_PORT ?? 8080);
 const WS_PORT  = Number(process.env.ATLAS_WS_PORT ?? 27095);
 const HOST     = String(process.env.ATLAS_HOST ?? "127.0.0.1");
+// buat akses LAN dari HP
+const BIND_HOST = String(process.env.ATLAS_BIND_HOST ?? "0.0.0.0");
 
 // kirim ke frontend supaya tau port WS dan info lain kalo perlu
 const DASH_CONFIG = {
@@ -37,12 +39,12 @@ app.get("/config.json", (req, res) => {
   res.end(JSON.stringify(DASH_CONFIG));
 });
 
-app.listen(WEB_PORT, HOST, () => {
-    logger.info(`Web listening on http://${HOST}:${WEB_PORT}`);
+app.listen(WEB_PORT, BIND_HOST, () => {
+    logger.info(`Web listening on http://${BIND_HOST}:${WEB_PORT}`);
 });
 
-const wss = new WebSocket.Server({ host: HOST, port: WS_PORT });
-logger.info(`WS listening on ws://${HOST}:${WS_PORT}`);
+const wss = new WebSocket.Server({ host: BIND_HOST, port: WS_PORT });
+logger.info(`WS listening on ws://${BIND_HOST}:${WS_PORT}`);
 
 /*
  * Configure data folders
