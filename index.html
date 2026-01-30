@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+        <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+        <title>Supervisor Dashboard</title>
+        <style>
+            ::-webkit-scrollbar { width: 8px; }
+            ::-webkit-scrollbar-track { background: #1e293b; }
+            ::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 10px; }
+            html, body { height: auto; margin: 0; min-height: 100%; }
+            body { 
+                background-color: #0f172a; 
+                color: #cbd5e1; 
+                font-family: "Segoe UI", system-ui, -apple-system, sans-serif; 
+                padding: 0.5rem; 
+            }
+            #interface-overlay { display: none !important; }
+        </style>
+    </head>
+
+    <body class="min-h-screen m-0"> 
+        <div id="interface-overlay">
+            <input id="connection-input" value="auto" />
+            <span id="connection-light"></span>
+            <span id="stats-viewers-count"></span>
+            <span id="stats-fps-value"></span>
+            <span id="stats-players-value"></span>
+            <span id="stats-entities-value"></span>
+            <span id="stats-chunks-value"></span>
+            <span id="stats-buffers-value"></span>
+            <span id="stats-buffers-rendered-value"></span>
+            <div id="console-messages"></div>
+            <input type="checkbox" id="render-buffer-outlines" />
+            <input type="checkbox" id="render-axis-lines" />
+            <input type="checkbox" id="render-player-markers" />
+            <input type="checkbox" id="render-chunk-grid" />
+            <input type="checkbox" id="render-mouse-tooltip" />
+            <input type="checkbox" id="render-crosshair" />
+            <input type="number" id="x-offset-input" />
+            <input type="number" id="z-offset-input" />
+            <input type="number" id="scale-input" />
+        </div>
+
+        <button class="fixed top-4 right-4 z-50 bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded md:hidden">
+            &#9776;
+        </button>
+
+        <div class="fixed inset-0 bg-gray-800 text-white text-xl p-4 z-40 flex flex-col space-y-4 md:hidden overflow-y-auto"
+             style="display: none;" 
+             x-show="dashboardOpen"> <button class="self-end text-white text-2xl font-bold">✕</button>
+
+            <div class="grid grid-cols-1 gap-2">
+                <button class="bg-indigo-600 hover:bg-indigo-700 py-2 rounded">Players</button>
+                <button class="bg-indigo-600 hover:bg-indigo-700 py-2 rounded">Statistics</button>
+                <button class="bg-indigo-600 hover:bg-indigo-700 py-2 rounded">Settings</button>
+            </div>
+            <div class="flex-1 flex items-center justify-center text-center border-t border-white/20 pt-4">
+                DASHBOARD VIEWER (Mobile)
+            </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-2">
+            <div class="flex flex-col flex-1 gap-2">
+                <div id="canvas-container" class="dashboard-panel flex min-h-[200px]"></div>
+                
+                <div id="console-box" class="dashboard-panel flex flex-col h-40 shrink-0 mb-14 md:mb-0 overflow-hidden">
+                    <div id="log-output" class="rounded-t-md flex-1 bg-gray-800 p-2 overflow-y-auto text-white text-xs font-mono"></div>
+                    <div class="flex items-center bg-white px-1 py-0.5 rounded-b-md overflow-hidden">
+                        <input id="console-input" type="text" placeholder="Console Input..." class="flex-1 h-7 px-2 mt-0.5 mb-0.5 text-sm text-black text-center bg-white placeholder-gray-600 focus:outline-none rounded-md" />
+                        <button id="console-send" class="ml-1 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md">Send</button>
+                        <button id="console-clear" class="ml-1 px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-md">Clear</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-panel hidden md:flex w-1/4 p-4 text-white text-xl font-semibold flex-col items-center">
+                <div class="grid grid-cols-3 gap-2 mb-4 w-full">
+                    <button class="bg-indigo-600 hover:bg-indigo-700 text-sm py-1 rounded shadow w-full">Players</button>
+                    <button class="bg-indigo-600 hover:bg-indigo-700 text-sm py-1 rounded shadow w-full">Statistics</button>
+                    <button class="bg-indigo-600 hover:bg-indigo-700 text-sm py-1 rounded shadow w-full">Settings</button>
+                </div>
+                <div class="flex-1 flex items-center justify-center border-t border-white/20 w-full pt-4 text-center">
+                    DASHBOARD VIEWER
+                </div>
+            </div> </div>
+
+        <script type="module" src="/src/main.js"></script>
+
+        <script>
+            function adjustCanvasHeight() {
+                const canvasContainer = document.getElementById("canvas-container");
+                const consoleBox = document.getElementById("console-box");
+                if (canvasContainer && consoleBox) {
+                    const totalHeight = window.innerHeight; 
+                    const consoleHeight = consoleBox.offsetHeight + 8; 
+                    const paddingBottom = 15; 
+                    const newHeight = totalHeight - consoleHeight - paddingBottom;
+                    canvasContainer.style.height = `${newHeight}px`;
+                }
+            }
+            window.addEventListener("load", adjustCanvasHeight);
+            window.addEventListener("resize", adjustCanvasHeight);
+        </script>
+    </body>
+</html>

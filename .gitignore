@@ -1,9 +1,33 @@
-.DS_STORE
+# system files (mac/windows)
+.DS_Store
+Thumbs.db
+
+# log output dari supervisor (Node.js)
 supervisor.stdout.log
 supervisor.stderr.log
-node_modules
-cache
-skins
-/web/index*.html
-/web/js/supabase-config.js
-/web/js/main*.js
+
+# log error dari NPM
+npm-debug.log*
+
+# dependencies
+node_modules/
+
+# build output (vite)
+dist/
+dist-ssr/
+
+# runtime data, plugin atlas
+cache/
+skins/
+
+# environment variables, .env buat nyimpen password/config rahasia
+.env
+.env.local
+.env.*.local
+
+# editor config
+.vscode/
+.idea/
+
+#local
+supervisor*.zip

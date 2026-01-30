@@ -1,0 +1,289 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+    margin: 0px;
+    padding: 0px;
+    box-sizing: border-box;
+    color: #fff;
+    outline: none !important;
+}
+
+html,
+body {
+    overflow: hidden; /* biar gak ada scrollbar window pas drag map */
+    background-color: #333; /* fallback color */
+}
+
+/* UI elements */
+
+.dashboard-panel {
+    background-color: #1e293b !important; /* paksa warna background */
+    border: 1px solid #334155 !important; /* paksa warna border */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border-radius: 0.75rem; /* rounded-xl */
+}
+
+/* pastiin canvas fit di dalem panel tanpa ngerusak border */
+#canvas-container {
+    overflow: hidden; 
+    position: relative;
+}
+
+/* biar inputan di dalam overlay tetep bisa diklik */
+#interface-overlay > * {
+    pointer-events: auto;
+}
+
+.console {
+    width: 100vw;
+    height: 240px;
+    padding: 12px;
+}
+
+.console__input {
+    display: flex;
+    height: 38px;
+    width: 100%;
+    justify-content: flex-start;
+}
+
+#console-input {
+    width: 100%;
+    height: 38px;
+    background-color: rgba(0, 0, 0, 0.315);
+    color: #000;
+    padding: 4px 12px;
+    border: none;
+    outline: none;
+}
+#console-text-input:hover {
+    background-color: rgba(0, 0, 0, 0.445);
+}
+
+#console-send-button {
+    padding: 4px 12px;
+    background-color: #1d1d1d;
+    border: none;
+}
+
+.message-list {
+    display: flex;
+    flex-flow: column nowrap;
+    list-style: none;
+    overflow-y: auto;
+    height: 100%;
+}
+.message-list > :first-child {
+    margin-top: auto !important;
+}
+
+.message-list__message {
+    padding: 5px 12px;
+    border-radius: 3px;
+    background-color: rgba(0, 0, 0, 0.315);
+    margin: 5px 0px;
+}
+
+/* sidebar & status --- */
+
+.sidebar {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100vh;
+    background-color: #121212;
+}
+
+.sidebar-content {
+    min-width: 380px;
+    overflow-y: scroll;
+}
+
+.control-bar {
+    height: 40px;
+    width: 100%;
+    position: absolute;
+    top: 0;
+}
+
+.control-bar input[type="text"] {
+    border: none;
+    background-color: rgba(0, 0, 0, 0.274);
+    padding: 4px 12px;
+}
+
+#connection-light {
+    width: 12px;
+    height: 12px;
+    margin-left: 12px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.connected-light {
+    box-shadow: 0px 0px 8px #25b900;
+    background-color: #25b900;
+}
+
+.disconnected-light {
+    box-shadow: 0px 0px 8px #b90000;
+    background-color: #b90000;
+}
+
+#stats-table {
+    table-layout: fixed;
+}
+.stats-value {
+    text-align: right;
+}
+.stats-row {
+    padding: 8px 2px;
+}
+.stats-label {
+    font-weight: bold;
+}
+td {
+    width: 100%;
+    overflow: hidden;
+}
+
+#viewers-info {
+    border-radius: 6px;
+    background-color: rgba(0, 0, 0, 0.315);
+}
+
+.force-messages > p {
+    opacity: 100% !important;
+}
+
+/* scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+::-webkit-scrollbar-thumb {
+    background: #4f46e5;
+    border-radius: 10px;
+}
+
+/* custom slidebar / range input --- */
+
+#zoom-slider {
+    left: 13px;
+}
+
+input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    background: transparent;
+}
+
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+}
+
+input[type=range]:focus {
+    outline: none;
+}
+
+input[type=range]::-ms-track {
+    width: 100%;
+    cursor: pointer;
+    background: transparent; 
+    border-color: transparent;
+    color: transparent;
+}
+
+/* webkit (chrome/safari/edge) thumb */
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    border: 1px solid #000000;
+    height: 36px;
+    width: 16px;
+    border-radius: 3px;
+    background: #ffffff;
+    cursor: pointer;
+    margin-top: -14px;
+    box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+}
+
+/* firefox thumb */
+input[type=range]::-moz-range-thumb {
+    box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+    border: 1px solid #000000;
+    height: 36px;
+    width: 16px;
+    border-radius: 3px;
+    background: #ffffff;
+    cursor: pointer;
+}
+
+/* IE thumb */
+input[type=range]::-ms-thumb {
+    box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+    border: 1px solid #000000;
+    height: 36px;
+    width: 16px;
+    border-radius: 3px;
+    background: #ffffff;
+    cursor: pointer;
+}
+
+/* webkit track */
+input[type=range]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 8.4px;
+    cursor: pointer;
+    box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+    background: #3071a9;
+    border-radius: 1.3px;
+    border: 0.2px solid #010101;
+}
+
+input[type=range]:focus::-webkit-slider-runnable-track {
+    background: #367ebd;
+}
+
+/* firefox track */
+input[type=range]::-moz-range-track {
+    width: 100%;
+    height: 8.4px;
+    cursor: pointer;
+    box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+    background: #3071a9;
+    border-radius: 1.3px;
+    border: 0.2px solid #010101;
+}
+
+/* IE track */
+input[type=range]::-ms-track {
+    width: 100%;
+    height: 8.4px;
+    cursor: pointer;
+    background: transparent;
+    border-color: transparent;
+    border-width: 16px 0;
+    color: transparent;
+}
+input[type=range]::-ms-fill-lower {
+    background: #2a6495;
+    border: 0.2px solid #010101;
+    border-radius: 2.6px;
+    box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+}
+input[type=range]:focus::-ms-fill-lower {
+    background: #3071a9;
+}
+input[type=range]::-ms-fill-upper {
+    background: #3071a9;
+    border: 0.2px solid #010101;
+    border-radius: 2.6px;
+    box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+}
+input[type=range]:focus::-ms-fill-upper {
+    background: #367ebd;
+}

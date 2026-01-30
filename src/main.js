@@ -1,215 +1,150 @@
-const fs = require("fs");
-const WebSocket = require('ws');
-const os = require("os");
+import './style.css';
 
-const logger = require('./utils/logger.js');
-const Supervisor = require('./supervisor.js');
-const Packet = require('./network/packet.js');
-const Input = require('./command/input.js');
+import { Renderer } from './graphics/Renderer.js';
+import { BlockPainter } from './graphics/BlockPainter.js';
+import { ChunkManager } from './managers/ChunkManager.js';
+import { AssetManager } from './managers/AssetManager.js';
+import { Viewport } from './graphics/Viewport.js';
+import { Network } from './core/Network.js';
+import { UIManager } from './ui/UIManager.js';
+import { EntityManager } from './managers/EntityManager.js';
 
-/*
- * Setup the Http server to serve web view and associated assets
- */
-// const express = require("express");
-
-// const app = express();
-
-// app.use(express.static("web"));
-// app.use('/skins', express.static("skins"));
-// app.use('/assets', express.static('web/assets'));
-
-// app.get("/", (req, res) => {
-//     res.sendFile(__dirname + "/web/index.html")
-// });
-
-const http = require("node:http");
-const path = require("node:path");
-const fsp = require("node:fs/promises");
-
-// root folder supervisor (src/..)
-const ROOT = path.resolve(__dirname, "..");
-const WEB_ROOT = path.join(ROOT, "web");
-const SKINS_ROOT = path.join(ROOT, "skins");
-const ASSETS_ROOT = path.join(WEB_ROOT, "assets");
-
-const MIME = {
-    ".html": "text/html; charset=utf-8",
-    ".css": "text/css; charset=utf-8",
-    ".js": "application/javascript; charset=utf-8",
-    ".json": "application/json; charset=utf-8",
-    ".png": "image/png",
-    ".jpg": "image/jpeg",
-    ".jpeg": "image/jpeg",
-    ".gif": "image/gif",
-    ".svg": "image/svg+xml",
-    ".ico": "image/x-icon",
-    ".map": "application/json; charset=utf-8",
-    ".woff": "font/woff",
-    ".woff2": "font/woff2",
-    ".ttf": "font/ttf"
+// state global buat modular tapi accessible
+const app = {
+    renderer: null,
+    chunkManager: null,
+    entityManager: null,
+    assetManager: null,
+    network: null,
+    ui: null,
+    isRunning: false,
+    lastTime: 0,
+    fps: 0,
+    // input state
+    isDragging: false,
+    dragStart: { x: 0, y: 0 },
 };
 
-const WEB_PORT = Number(process.env.ATLAS_WEB_PORT ?? 8080);
-const WS_PORT = Number(process.env.ATLAS_WS_PORT ?? 27095);
-const BIND_HOST = String(process.env.ATLAS_BIND_HOST ?? "0.0.0.0"); // buat akses LAN dari HP
+// initialization
+async function init() {
+    console.log("[Atlas] Starting Supervisor Dashboard...");
+    // setup DOM elements
+    const container = document.getElementById('canvas-container');
+    if (!container) throw new Error("Canvas container not found!");
+    // buat canvas element secara dynamic biar bersih
+    const canvas = document.createElement('canvas');
+    canvas.id = 'map-canvas';
+    // style biar pas sama container
+    canvas.style.display = 'block';
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    container.appendChild(canvas);
+    // initialize managers
+    app.chunkManager = new ChunkManager();
+    app.entityManager = new EntityManager();
+    app.assetManager = new AssetManager();
+    const blockPainter = new BlockPainter();
+    app.renderer = new Renderer(canvas, blockPainter, app.assetManager);
+    // setup UI & Network
+    app.ui = new UIManager(app);
+    app.ui.setup(); // bind events
+    app.network = new Network(app);
+    // start connection
+    app.network.connect(); // auto connect ke localhost/LAN
+    // load assets, tunggu selesai baru lanjut
+    await Promise.all([
+        app.assetManager.loadImage('map_icons', '/assets/map_icons.png'),
+        app.assetManager.loadFont('Minecraft', '/assets/minecraft_font.otf')
+    ]);
+    // setup event listeners, input & resize
+    setupInputs(canvas);
+    setupResize(container);
+    // start loop
+    app.isRunning = true;
+    requestAnimationFrame(gameLoop);
 
-// kirim ke frontend supaya tau port WS dan info lain kalo perlu
-const DASH_CONFIG = {
-  wsPort: WS_PORT,
-  webPort: WEB_PORT
-};
-
-function safeResolve(baseDir, urlPath) {
-    // urlPath: "/assets/a.css" -> rel "a.css"
-    const rel = urlPath.replace(/^\/+/, "");
-    const full = path.resolve(baseDir, rel);
-    // prevent path traversal
-    const base = path.resolve(baseDir) + path.sep;
-    if (!full.startsWith(base)) return null;
-    return full;
+    // TODO: Init Network Connection disini nanti
+    // Network.connect();
+    
+    console.log("[Atlas] Ready to serve.");
 }
 
-async function sendFile(res, filePath) {
-    const ext = path.extname(filePath).toLowerCase();
-    res.statusCode = 200;
-    res.setHeader("Content-Type", MIME[ext] ?? "application/octet-stream");
-    // stream file
-    const stream = fs.createReadStream(filePath);
-    stream.on("error", () => {
-        res.statusCode = 500;
-        res.end("Internal Server Error");
+// game loop
+function gameLoop(timestamp) {
+    if (!app.isRunning) return;
+    // hitung FPS manual
+    const deltaTime = timestamp - app.lastTime;
+    app.lastTime = timestamp;
+    app.fps = Math.round(1000 / deltaTime);
+    // ambil data player asli dari EntityManager
+    const players = app.entityManager ? app.entityManager.getAllPlayers() : [];
+    // pass data chunks & players ke renderer
+    app.renderer.render(app.fps, players);
+    // render queue chunk, biar chunk yg baru masuk diproses
+    // logic ambil chunk dari ChunkManager yg belum dirender, nnti diimplementasi di Network logic
+    requestAnimationFrame(gameLoop);
+}
+
+// input handling pengganti UI.mouseDragged p5.js
+function setupInputs(canvas) {
+    const viewport = app.renderer.viewport;
+    // mouse down mulai drag
+    canvas.addEventListener('mousedown', (e) => {
+        app.isDragging = true;
+        app.dragStart.x = e.clientX;
+        app.dragStart.y = e.clientY;
     });
-    stream.pipe(res);
+    // mouse move proses drag
+    window.addEventListener('mousemove', (e) => {
+        if (!app.isDragging) return;
+        const dx = e.clientX - app.dragStart.x;
+        const dy = e.clientY - app.dragStart.y;
+        // update temp offset di viewport
+        viewport.tempOffsetX = dx;
+        viewport.tempOffsetY = dy;
+    });
+    // mouse up selesai drag
+    window.addEventListener('mouseup', () => {
+        if (!app.isDragging) return;
+        // apply temp offset jadi permanent
+        viewport.setOffsets(
+            viewport.offsetX + viewport.tempOffsetX,
+            viewport.offsetY + viewport.tempOffsetY
+        );
+        // reset temp
+        viewport.tempOffsetX = 0;
+        viewport.tempOffsetY = 0;
+        app.isDragging = false;
+    });
+    // zoom wheel
+    canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const zoomSpeed = 0.1;
+        const direction = e.deltaY > 0 ? -1 : 1; // scroll bawah = zoom out
+        const oldScale = viewport.scale;
+        const newScale = oldScale + (direction * zoomSpeed);
+        // logic zoom ke tengah layar, simplified dari p5 logic
+        // kalo mau zoom ke cursor mouse, butuh matematika viewport yg lebih kompleks
+        // skarang zoom center screen dulu biar aman
+        viewport.setScale(newScale);
+    }, { passive: false });
 }
 
-const server = http.createServer(async (req, res) => {
-    try {
-        const u = new URL(req.url ?? "/", "http://localhost");
-        const pathname = decodeURIComponent(u.pathname);
-        // dashboard config
-        if (pathname === "/config.json") {
-            res.statusCode = 200;
-            res.setHeader("Content-Type", "application/json; charset=utf-8");
-            res.setHeader("Cache-Control", "no-store");
-            res.end(JSON.stringify(DASH_CONFIG));
-            return;
+// resize handling
+function setupResize(container) {
+    const resizeObserver = new ResizeObserver((entries) => {
+        for (let entry of entries) {
+            const { width, height } = entry.contentRect;
+            // update ukuran canvas & viewport renderer
+            app.renderer.resize(width, height);
         }
-        // routing static
-        let baseDir = WEB_ROOT;
-        let subPath = pathname;
-        if (pathname.startsWith("/skins/")) {
-            baseDir = SKINS_ROOT;
-            subPath = pathname.slice("/skins/".length);
-        } else if (pathname.startsWith("/assets/")) {
-            baseDir = ASSETS_ROOT;
-            subPath = pathname.slice("/assets/".length);
-        } else {
-            // web root
-            subPath = pathname === "/" ? "index.html" : pathname.slice(1);
-        }
-        const resolved = safeResolve(baseDir, subPath);
-        if (!resolved) {
-            res.statusCode = 403;
-            res.end("Forbidden");
-            return;
-        }
-        // if folder -> index.html
-        let stat;
-        try {
-            stat = await fsp.stat(resolved);
-        } catch {
-            res.statusCode = 404;
-            res.end("Not Found");
-            return;
-        }
-        if (stat.isDirectory()) {
-            const idx = path.join(resolved, "index.html");
-            try {
-                await fsp.stat(idx);
-                await sendFile(res, idx);
-                return;
-            } catch {
-                res.statusCode = 404;
-                res.end("Not Found");
-                return;
-            }
-        }
-        await sendFile(res, resolved);
-    } catch (e) {
-        res.statusCode = 500;
-        res.end("Internal Server Error");
-    }
-});
-
-function guessLanIp() {
-    const nets = os.networkInterfaces();
-    for (const name of Object.keys(nets)) {
-        for (const net of nets[name] || []) {
-            if (net.family === "IPv4" && !net.internal) {
-                return net.address;
-            }
-        }
-    }
-    return null;
+    });
+    resizeObserver.observe(container);
+    // trigger initial resize
+    app.renderer.resize(container.clientWidth, container.clientHeight);
 }
 
-const lanIp = guessLanIp();
-// bind vs cara akses
-logger.info(`Web bind: http://${BIND_HOST}:${WEB_PORT}`);
-if (lanIp) logger.info(`Web LAN:  http://${lanIp}:${WEB_PORT}`);
-logger.info(`WS bind:  ws://${BIND_HOST}:${WS_PORT}`);
-if (lanIp) logger.info(`WS LAN:   ws://${lanIp}:${WS_PORT}`);
-
-// app.get("/config.json", (req, res) => {
-//   res.setHeader("Content-Type", "application/json");
-//   res.setHeader("Cache-Control", "no-store");
-//   res.end(JSON.stringify(DASH_CONFIG));
-// });
-
-// app.listen(WEB_PORT, BIND_HOST, () => {
-//     logger.info(`Web listening on http://${BIND_HOST}:${WEB_PORT}`);
-// });
-
-server.listen(WEB_PORT, BIND_HOST, () => {
-    logger.info(`Web listening on http://${BIND_HOST}:${WEB_PORT}`);
-});
-
-const wss = new WebSocket.Server({ host: BIND_HOST, port: WS_PORT });
-logger.info(`WS listening on ws://${BIND_HOST}:${WS_PORT}`);
-
-/*
- * Configure data folders
- */
-if (!fs.existsSync("cache")) {
-    fs.mkdirSync("cache");
-}
-if (!fs.existsSync("skins")) {
-    fs.mkdirSync("skins");
-}
-
-// Placeholder
-const config = {};
-
-Supervisor._setup(wss, config);
-
-// function handleLevelPacket(pk, ws) {
-//     ws.send(levelCache.toPacket());
-// }
-
-// function handleChunkPacket(pk, ws) {
-//     let chunk = pk.body.chunk;
-//     // console.log(`Chunk (${chunk.x}, ${chunk.z}) recieved`);
-//     levelCache.setChunk(chunk.x, chunk.z, chunk);
-// }
-
-// function handleSubscriptions(pk, ws) {
-//     if (viewers.indexOf(ws) === -1) {
-//         viewers.push(ws);
-//         logger.info('Client subscribed to broadcasts');
-
-//         return true;
-//     }
-//     logger.notice('Client tried subscribing twice, thats not allowed!');
-
-//     return false;
-// }
+// bootstrap
+window.addEventListener('DOMContentLoaded', init);
+// expose app buat debugging di console browser
+window.Atlas = app;
