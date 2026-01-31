@@ -6,124 +6,128 @@ const WebSocket = require("ws");
 // config Env dari PHP
 const WEB_PORT = Number(process.env.ATLAS_WEB_PORT || 8080);
 const WS_PORT = Number(process.env.ATLAS_WS_PORT || 27095);
-const BIND_HOST = process.env.ATLAS_BIND_HOST || "0.0.0.0";
+const ATLAS_HOST = process.env.ATLAS_HOST || "127.0.0.1";
+const ATLAS_BIND_HOST = process.env.ATLAS_BIND_HOST || "0.0.0.0";
 
-console.log(`[Supervisor] Starting on ${BIND_HOST}...`);
-
-// setup HTTP Server buat serving file Web Dashboard
+// HTTP server (8080) serve ke /config.json
 const server = http.createServer((req, res) => {
-    // basic static file serving logic
-    // di mode production nanti serve folder dist hasil build Vite
-    // skarang serve simple response dulu biar gak error 404
-    // let filePath = '.' + req.url;
-    // if (filePath === './') filePath = './index.html';
-
-    let urlPath = req.url.split('?')[0]; // hapus query string
-    if (urlPath === '/') urlPath = '/index.html';
-    const filePath = path.join(__dirname, 'dist', urlPath);
-    const extname = path.extname(filePath);
-    const contentType = {
-        '.html': 'text/html',
-        '.js': 'text/javascript',
-        '.css': 'text/css',
-        '.json': 'application/json',
-        '.png': 'image/png',
-        '.jpg': 'image/jpg',
-    }[extname] || 'application/octet-stream';
-    fs.readFile(filePath, (error, content) => {
-        if (error) {
-            if(error.code === 'ENOENT') {
-                // halaman 404
-                console.log(`[Web] 404 Not Found: ${urlPath}`);
-                res.writeHead(404);
-                res.end('404 Not Found (Run "npm run dev" for Vite development)');
-            } else {
-                res.writeHead(500);
-                res.end('Internal Server Error: ' + error.code);
-            }
-        } else {
-            res.writeHead(200, { 'Content-Type': contentType });
-            res.end(content, 'utf-8');
+    const urlPath = (req.url || "/").split("?")[0];
+    // endpoint buat proxy vite + runtime
+    if (urlPath === "/config.json") {
+        const payload = JSON.stringify({
+            host: ATLAS_HOST,
+            bindHost: ATLAS_BIND_HOST,
+            wsPort: WS_PORT,
+            webPort: WEB_PORT,
+        });
+        res.writeHead(200, {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-store",
+        });
+        res.end(payload);
+        return;
+    }
+    // buat cek health
+    if (urlPath === "/health") {
+        res.writeHead(200, { "Content-Type": "text/plain", "Cache-Control": "no-store" });
+        res.end("ok");
+        return;
+    }
+    // buat serve file production build dari ./dist, kalo dist ga ada biarin 404
+    let fileRel = urlPath === "/" ? "/index.html" : urlPath;
+    const filePath = path.join(__dirname, "dist", fileRel);
+    fs.readFile(filePath, (err, content) => {
+        if (err) {
+            res.writeHead(404, { "Content-Type": "text/plain" });
+            res.end('404 Not Found (Run "npm run dev" for Vite development)');
+            return;
         }
+        const ext = path.extname(filePath).toLowerCase();
+        const contentType =
+            ext === ".html" ? "text/html" :
+            ext === ".js" ? "text/javascript" :
+            ext === ".css" ? "text/css" :
+            ext === ".json" ? "application/json" :
+            ext === ".png" ? "image/png" :
+            ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" :
+            "application/octet-stream";
+        res.writeHead(200, { "Content-Type": contentType });
+        res.end(content);
     });
 });
-
-server.listen(WEB_PORT, BIND_HOST, () => {
-    console.log(`[Web] Server running at http://${BIND_HOST}:${WEB_PORT}/`);
+server.listen(WEB_PORT, ATLAS_BIND_HOST, () => {
+    console.log(`[Supervisor] Web: http://${ATLAS_HOST}:${WEB_PORT}`);
+    console.log(`[Supervisor] Config: http://${ATLAS_HOST}:${WEB_PORT}/config.json`);
+    console.log(`[Supervisor] Health: http://${ATLAS_HOST}:${WEB_PORT}/health`);
 });
-
-// setup WebSocket Server, buat komunikasi sama Atlas
-const wss = new WebSocket.Server({ host: BIND_HOST, port: WS_PORT });
-
-console.log(`[WS] WebSocket listening on ws://${BIND_HOST}:${WS_PORT}`);
-
+// WebSocket server (27095), buat komunikasi Atlas (PHP) <-> Viewer (Browser)
+const wss = new WebSocket.Server({ host: ATLAS_BIND_HOST, port: WS_PORT });
+console.log(`[Supervisor] WS: ws://${ATLAS_HOST}:${WS_PORT}`);
 // store clients
-let serverClient = null; // koneksi dari PocketMine (PHP)
-let viewers = []; // koneksi dari Browser (Dashboard)
-
-wss.on('connection', (ws) => {
-    ws.on('message', (message) => {
-        try {
-            const packet = JSON.parse(message);
-            handlePacket(ws, packet);
-        } catch (e) {
-            console.error("Invalid JSON:", e.message);
-        }
-    });
-
-    ws.on('close', () => {
-        if (ws === serverClient) {
-            console.log("[WS] Server (PHP) disconnected");
-            serverClient = null;
-        } else {
-            viewers = viewers.filter(v => v !== ws);
-        }
-    });
+let serverClient = null; // koneksi dari Atlas/PocketMine
+let viewers = []; // koneksi dari Browser
+let lastServerInfo = null;
+wss.on("connection", (ws) => {
+  ws.on("message", (message) => {
+    try {
+      const packet = JSON.parse(message);
+      handlePacket(ws, packet);
+    } catch (e) {
+      console.error("[WS] Invalid JSON:", e.message);
+    }
+  });
+  ws.on("close", () => {
+    if (ws === serverClient) {
+      console.log("[WS] Server (PHP) disconnected");
+      serverClient = null;
+    } else {
+      viewers = viewers.filter((v) => v !== ws);
+    }
+  });
 });
 
+// handle packet dari client (server atau viewer)
 function handlePacket(ws, packet) {
     const { type, body } = packet;
     // login logic
-    if (type === 'login.server') {
+    if (type === "login.server") {
         serverClient = ws;
-        console.log(`[Auth] Server connected: ${body.name}`);
+        console.log(`[Auth] Server connected: ${body?.name || "unknown"}`);
         // kirim status true
-        ws.send(JSON.stringify({ 
-            type: 'login.server', 
-            body: { status: true, message: "Connected to Supervisor" } 
+        ws.send(JSON.stringify({
+            type: "login.server",
+            body: { status: true, message: "Connected to Supervisor" },
         }));
         return;
     }
-    if (type === 'login.viewer') {
+    if (type === "login.viewer") {
+        viewers = viewers.filter(v => v !== ws);
         viewers.push(ws);
-        console.log(`[Auth] New viewer connected`);
-        ws.send(JSON.stringify({ type: 'login.viewer', body: { status: true } }));
+        console.log("[Auth] New viewer connected");
+        ws.send(JSON.stringify({ type: "login.viewer", body: { status: true } }));
         // kirim info server terkini ke viewer baru
         if (serverClient && lastServerInfo) {
-             ws.send(JSON.stringify({ type: 'info', body: lastServerInfo }));
+            ws.send(JSON.stringify({ type: "info", body: lastServerInfo }));
         }
         return;
     }
-    // routing logic, kalo dari server (PHP) -> broadcast ke semua viewer (Browser)
+    // server -> viewer
     if (ws === serverClient) {
-        broadcastToViewers(packet); // forward paket mentah
-    } 
-    // kalo dari viewer (Browser) -> kirim ke server (PHP)
-    else {
-        if (serverClient) {
-            serverClient.send(JSON.stringify(packet));
-        }
+        if (type === "info") lastServerInfo = body || null;
+        broadcastToViewers(packet);
+        return;
+    }
+    // viewer -> server
+    if (serverClient) {
+        serverClient.send(JSON.stringify(packet));
     }
 }
 
 function broadcastToViewers(data) {
     const msg = JSON.stringify(data);
-    viewers.forEach(client => {
+    viewers.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
-            client.send(msg);
+        client.send(msg);
         }
     });
 }
-
-// keep track info server buat viewer yg baru join
-let lastServerInfo = null;

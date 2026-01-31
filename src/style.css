@@ -3,17 +3,21 @@
 @tailwind utilities;
 
 * {
-    margin: 0px;
-    padding: 0px;
     box-sizing: border-box;
-    color: #fff;
-    outline: none !important;
 }
 
-html,
 body {
     overflow: hidden; /* biar gak ada scrollbar window pas drag map */
     background-color: #333; /* fallback color */
+    color: #fff; /* teks default putih */
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* font standar */
+}
+
+/* khusus input biar gak ikut gelap trus textnya ilang */
+input, select, textarea {
+    color: #000; /* balikin text input jadi item */
 }
 
 /* UI elements */

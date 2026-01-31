@@ -3,18 +3,21 @@ export class Network {
         this.app = app; // reference ke main app state buat akses managers
         this.socket = null;
         this.url = '';
+        this.manualUrl = null;
         this.reconnectTimer = null;
         this.viewportInterval = null;
         // status state
         this.isConnected = false;
     }
 
-    connect(url) {
+    async connect(url) {
+        this.manualUrl = url ?? null;
         // cleanup koneksi lama kalo ada
         if (this.socket) {
-            this.socket.close();
+            try { this.socket.close(); } catch (_) {}
+            this.socket = null;
         }
-        this.url = url || this._resolveWsUrl();
+        this.url = this.manualUrl || await this._resolveWsUrl();
         console.log(`[Network] Connecting to ${this.url}...`);
         this.socket = new WebSocket(this.url);
         // event listeners
@@ -38,8 +41,10 @@ export class Network {
             this.app.ui.log(`Disconnected from server. Retrying...`, "error");
             this._cleanup();
             // retry logic
+            clearTimeout(this.reconnectTimer);
             this.reconnectTimer = setTimeout(() => {
-                this.connect(this.url);
+            // kalo manualUrl ada, pake itu. kalo auto, resolve ulang config.json
+                this.connect(this.manualUrl);
             }, 3000);
         };
 
@@ -73,12 +78,28 @@ export class Network {
         // if (this.app.ui) this.app.ui.setConnectionStatus(false);
     }
 
-    _resolveWsUrl() {
-        // logic autodetect host
+    async _resolveWsUrl() {
         const proto = window.location.protocol === "https:" ? "wss" : "ws";
         const host = window.location.hostname || "localhost";
-        const port = 27095; // default port Atlas
-        return `${proto}://${host}:${port}`;
+        // kalo user isi manual
+        const input = document.getElementById("connection-input");
+        const value = input?.value?.trim();
+        if (value && value !== "auto") return value;
+        // coba ambil dari server config, paling akurat
+        try {
+            const res = await fetch("/config.json", { cache: "no-store" });
+            if (res.ok) {
+            const cfg = await res.json();
+            if (cfg?.wsPort) return `${proto}://${host}:${cfg.wsPort}`;
+            }
+        } catch (_) {}
+        // fallback
+        if (window.location.port === "5173") {
+            console.log("[Network] Dev Mode detected, fallback ws:8080");
+            return `${proto}://${host}:27095`;
+        }
+        // fallback prod default kalo bener bener gak ada config
+        return `${proto}://${host}:27095`;
     }
 
     _startViewportSync() {
