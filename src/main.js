@@ -197,6 +197,29 @@ function setupResize(container) {
 }
 
 // bootstrap
-window.addEventListener('DOMContentLoaded', init);
+window.addEventListener('DOMContentLoaded', () => {
+    // jalanin game loop dulu
+    init();
+    // logika menu mobile
+    const menuBtn = document.getElementById('mobile-menu-btn');
+    const dashboard = document.getElementById('mobile-dashboard');
+    let isMenuOpen = false; // status awal: nutup
+    if (menuBtn && dashboard) {
+        menuBtn.addEventListener('click', () => {
+            isMenuOpen = !isMenuOpen; // switch on/off
+            if (isMenuOpen) {
+                // pas buka: hapus hidden, paksa flex, ganti ikon X
+                dashboard.classList.remove('hidden');
+                dashboard.classList.add('flex');
+                menuBtn.innerHTML = '&#10005;'; 
+            } else {
+                // pas tutup: pasang hidden, buang flex, ganti ikon garis 3
+                dashboard.classList.add('hidden');
+                dashboard.classList.remove('flex');
+                menuBtn.innerHTML = '&#9776;'; 
+            }
+        });
+    }
+});
 // expose app buat debugging di console browser
 window.Atlas = app;

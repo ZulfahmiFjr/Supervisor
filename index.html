@@ -45,19 +45,17 @@
             <input type="number" id="scale-input" />
         </div>
 
-        <button class="fixed top-4 right-4 z-50 bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded md:hidden">
+        <button id="mobile-menu-btn" class="fixed top-4 right-4 z-50 bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded md:hidden">
             &#9776;
         </button>
 
-        <div class="fixed inset-0 bg-gray-800 text-white text-xl p-4 z-40 flex flex-col space-y-4 md:hidden overflow-y-auto"
-             style="display: none;" 
-             x-show="dashboardOpen"> <button class="self-end text-white text-2xl font-bold">✕</button>
-
-            <div class="grid grid-cols-1 gap-2">
+        <div id="mobile-dashboard" class="fixed inset-0 bg-gray-800 text-white text-xl p-4 z-40 flex-col space-y-4 md:hidden hidden overflow-y-auto"> 
+            <div class="grid grid-cols-1 gap-2 mt-12"> 
                 <button class="bg-indigo-600 hover:bg-indigo-700 py-2 rounded">Players</button>
                 <button class="bg-indigo-600 hover:bg-indigo-700 py-2 rounded">Statistics</button>
                 <button class="bg-indigo-600 hover:bg-indigo-700 py-2 rounded">Settings</button>
             </div>
+            
             <div class="flex-1 flex items-center justify-center text-center border-t border-white/20 pt-4">
                 DASHBOARD VIEWER (Mobile)
             </div>
