@@ -180,6 +180,14 @@ td {
     left: 13px;
 }
 
+#map-canvas {
+  touch-action: none;  /* biar pointermove jalan normal & browser gak ambil alih */
+}
+
+#canvas-container, #map-canvas {
+  pointer-events: auto;
+}
+
 input[type=range] {
     appearance: none;
     -webkit-appearance: none;

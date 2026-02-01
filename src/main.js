@@ -8,6 +8,7 @@ import { Viewport } from './graphics/Viewport.js';
 import { Network } from './core/Network.js';
 import { UIManager } from './ui/UIManager.js';
 import { EntityManager } from './managers/EntityManager.js';
+import { MathUtils } from "./utils/MathUtils.js";
 
 // state global buat modular tapi accessible
 const app = {
@@ -88,46 +89,97 @@ function gameLoop(timestamp) {
 // input handling pengganti UI.mouseDragged p5.js
 function setupInputs(canvas) {
     const viewport = app.renderer.viewport;
-    // mouse down mulai drag
-    canvas.addEventListener('mousedown', (e) => {
-        app.isDragging = true;
-        app.dragStart.x = e.clientX;
-        app.dragStart.y = e.clientY;
-    });
-    // mouse move proses drag
-    window.addEventListener('mousemove', (e) => {
-        if (!app.isDragging) return;
-        const dx = e.clientX - app.dragStart.x;
-        const dy = e.clientY - app.dragStart.y;
-        // update temp offset di viewport
-        viewport.tempOffsetX = dx;
-        viewport.tempOffsetY = dy;
-    });
-    // mouse up selesai drag
-    window.addEventListener('mouseup', () => {
-        if (!app.isDragging) return;
-        // apply temp offset jadi permanent
-        viewport.setOffsets(
-            viewport.offsetX + viewport.tempOffsetX,
-            viewport.offsetY + viewport.tempOffsetY
-        );
-        // reset temp
-        viewport.tempOffsetX = 0;
-        viewport.tempOffsetY = 0;
-        app.isDragging = false;
-    });
+    canvas.style.touchAction = "none";
+     // simpen pointer aktif (touch bisa lebih dari 1)
+    const pointers = new Map();
+    let isPanning = false;
+    let lastPan = { x: 0, y: 0 };
+    // pinch state
+    let isPinching = false;
+    let pinchStartDist = 0;
+    let pinchStartScale = 1;
+
+    function getTwoPointers() {
+        const arr = Array.from(pointers.values());
+        return [arr[0], arr[1]];
+    }
+
+    canvas.addEventListener("pointerdown", (e) => {
+        canvas.setPointerCapture(e.pointerId);
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (pointers.size === 1) {
+            isPanning = true;
+            isPinching = false;
+            const p = pointers.get(e.pointerId);
+            lastPan.x = p.x;
+            lastPan.y = p.y;
+        } else if (pointers.size === 2) {
+            isPinching = true;
+            isPanning = false;
+            const [a, b] = getTwoPointers();
+            pinchStartDist = MathUtils.dist(a.x, a.y, b.x, b.y);
+            pinchStartScale = viewport.scale;
+        }
+        e.preventDefault();
+    }, { passive: false });
+
+    canvas.addEventListener("pointermove", (e) => {
+        if (!pointers.has(e.pointerId)) return;
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (isPinching && pointers.size === 2) {
+            const [a, b] = getTwoPointers();
+            const d = MathUtils.dist(a.x, a.y, b.x, b.y);
+            if (pinchStartDist > 0) {
+                const factor = d / pinchStartDist;
+                const newScale = MathUtils.clamp(pinchStartScale * factor, 0.2, 6);
+                viewport.setScale(newScale);
+            }
+        } else if (isPanning && pointers.size === 1) {
+            const p = pointers.get(e.pointerId);
+            const dx = p.x - lastPan.x;
+            const dy = p.y - lastPan.y;
+            // apply langsung biar smooth di mobile
+            viewport.setOffsets(viewport.offsetX + dx, viewport.offsetY + dy);
+            lastPan.x = p.x;
+            lastPan.y = p.y;
+        }
+
+        e.preventDefault();
+    }, { passive: false });
+
+    function endPointer(e) {
+        pointers.delete(e.pointerId);
+        if (pointers.size === 0) {
+            isPanning = false;
+            isPinching = false;
+        } else if (pointers.size === 1) {
+            // balik ke pan kalo tinggal 1 finger
+            isPinching = false;
+            isPanning = true;
+            const only = Array.from(pointers.values())[0];
+            lastPan.x = only.x;
+            lastPan.y = only.y;
+        }
+    }
+
+    canvas.addEventListener("pointerup", (e) => {
+        endPointer(e);
+        e.preventDefault();
+    }, { passive: false });
+
+    canvas.addEventListener("pointercancel", (e) => {
+        endPointer(e);
+        e.preventDefault();
+    }, { passive: false });
+
     // zoom wheel
-    canvas.addEventListener('wheel', (e) => {
+    canvas.addEventListener("wheel", (e) => {
         e.preventDefault();
         const zoomSpeed = 0.1;
-        const direction = e.deltaY > 0 ? -1 : 1; // scroll bawah = zoom out
-        const oldScale = viewport.scale;
-        const newScale = oldScale + (direction * zoomSpeed);
-        // logic zoom ke tengah layar, simplified dari p5 logic
-        // kalo mau zoom ke cursor mouse, butuh matematika viewport yg lebih kompleks
-        // skarang zoom center screen dulu biar aman
+        const direction = e.deltaY > 0 ? -1 : 1;
+        const newScale = MathUtils.clamp(viewport.scale + direction * zoomSpeed, 0.2, 6);
         viewport.setScale(newScale);
-    }, { passive: false });
+    }, { passive: false });    
 }
 
 // resize handling
