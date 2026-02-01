@@ -193,7 +193,13 @@ function setupResize(container) {
     });
     resizeObserver.observe(container);
     // trigger initial resize
-    app.renderer.resize(container.clientWidth, container.clientHeight);
+    const initialWidth = container.clientWidth;
+    const initialHeight = container.clientHeight;
+    app.renderer.resize(initialWidth, initialHeight);
+    // paksa geser titik (0,0) ke tengah layar pas pertama kali dibuka
+    if (app.renderer.viewport) {
+        app.renderer.viewport.setOffsets(initialWidth / 2, initialHeight / 2);
+    }
 }
 
 // bootstrap
