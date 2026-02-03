@@ -96,6 +96,9 @@ export class Renderer {
         if (chunk.minY !== undefined && chunk.maxY !== undefined) {
             this.blockPainter.setWorldRange(chunk.minY, chunk.maxY);
         }
+        if (chunk.palette) {
+            this.blockPainter.ingestPalette(chunk.palette);
+        }
         const ctx = bufferObj.ctx;
         const bRes = RenderSettings.BLOCK_RESOLUTION;
         // hitung offset posisi chunk di dalam buffer itu
