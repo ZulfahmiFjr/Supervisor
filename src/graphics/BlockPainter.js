@@ -5,21 +5,26 @@ export class BlockPainter {
         this.shadingConfiguration = [
             [2, 40], [3, 15], [4, 20]
         ];
-        this.blockColorMap = {
-            '2': '#00b894', // Grass
-            '78': '#dfe6e9', // Snow
-            '1': '#636e72', // Stone
-            '18': '#009432', // Oak leaves
-            '9': '#0652DD', // Water
-            '12': '#ffeaa7', // Sand
-            '3': '#f0932b', // Dirt
-            '159': '#edcecc', // Pink clay
-            '172': '#c97947', // Hardened Clay
-            '161': '#78e08f', // Acacia leaves
-            '79': '#74b9ff', // Ice
-            '174': '#0984e3', // Packed ice
-        };
-        this.fallbackBlockColor = this.blockColorMap['2'];
+        // this.blockColorMap = {
+        //     '2': '#00b894', // Grass
+        //     '78': '#dfe6e9', // Snow
+        //     '1': '#636e72', // Stone
+        //     '18': '#009432', // Oak leaves
+        //     '9': '#0652DD', // Water
+        //     '12': '#ffeaa7', // Sand
+        //     '3': '#f0932b', // Dirt
+        //     '159': '#edcecc', // Pink clay
+        //     '172': '#c97947', // Hardened Clay
+        //     '161': '#78e08f', // Acacia leaves
+        //     '79': '#74b9ff', // Ice
+        //     '174': '#0984e3', // Packed ice
+        // };
+        this.blockColorMap = {};
+        this.blockColorMap["10282"] = "#00b894"; // hijau (daratan)
+        this.blockColorMap["10531"] = "#0652DD"; // biru (water)
+        this.blockColorMap["10521"] = "#ffeaa7"; // kuning (sand)
+        this.blockColorMap["10284"] = "#636e72"; // abu (rare)
+        this.fallbackBlockColor = this.blockColorMap['10282'];
     }
 
     paint(ctx, x, z, y, blockId, blockSize) {
