@@ -93,6 +93,9 @@ export class Renderer {
     }
 
     _paintChunkToBuffer(bufferObj, chunk) {
+        if (chunk.minY !== undefined && chunk.maxY !== undefined) {
+            this.blockPainter.setWorldRange(chunk.minY, chunk.maxY);
+        }
         const ctx = bufferObj.ctx;
         const bRes = RenderSettings.BLOCK_RESOLUTION;
         // hitung offset posisi chunk di dalam buffer itu
@@ -116,17 +119,22 @@ export class Renderer {
         for (let x = 0; x < 16; x++) {
             for (let z = 0; z < 16; z++) {
                 // ambil block ID & Y (ketinggian) dari data chunk layer
-                const cell = chunk.layer[x][z];
+                const cell = chunk.layer?.[x]?.[z];
                 if (!cell) continue;
-                const y = Object.keys(cell)[0];
-                const blockId = Object.values(cell)[0];
+                // cari key Y numeric misal 62, -10, dll
+                const yKey = Object.keys(cell).find(k => /^-?\d+$/.test(k));
+                if (yKey === undefined) continue;
+                const y = parseInt(yKey, 10);
+                const blockId = cell[yKey];
+                const depth = cell.d ?? 0;
                 this.blockPainter.paint(
                     ctx, 
                     pixelX + (x * bRes), // posisi X di canvas buffer
                     pixelZ + (z * bRes), // posisi Y di canvas buffer (z map jadi y screen)
                     y, // ketinggian buat shading
                     blockId,
-                    bRes // ukuran pixel per block
+                    bRes, // ukuran pixel per block
+                    depth
                 );
             }
         }
