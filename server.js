@@ -67,6 +67,8 @@ console.log(`[Supervisor] WS: ws://${ATLAS_HOST}:${WS_PORT}`);
 let serverClient = null; // koneksi dari Atlas/PocketMine
 let viewers = []; // koneksi dari Browser
 let lastServerInfo = null;
+// cache map data biar gak terus terusan dikirim ulang
+const mapCache = new Map();
 wss.on("connection", (ws) => {
   ws.on("message", (message) => {
     try {
@@ -92,6 +94,8 @@ function handlePacket(ws, packet) {
     // login logic
     if (type === "login.server") {
         serverClient = ws;
+        // kalo server restart kita clear cache lama biar gak conflict
+        mapCache.clear();
         console.log(`[Auth] Server connected: ${body?.name || "unknown"}`);
         // kirim status true
         ws.send(JSON.stringify({
@@ -109,11 +113,21 @@ function handlePacket(ws, packet) {
         if (serverClient && lastServerInfo) {
             ws.send(JSON.stringify({ type: "info", body: lastServerInfo }));
         }
+        // sync cached map
+        if (mapCache.size > 0) {
+            console.log(`[Sync] Sending ${mapCache.size} chunks to new viewer...`);
+            syncMapToViewer(ws);
+        }
         return;
     }
     // server -> viewer
     if (ws === serverClient) {
         if (type === "info") lastServerInfo = body || null;
+        // simpen ke otak supervisor sebelum dibroadcast
+        if (type === "chunk" && body.chunk) {
+            const key = `${body.chunk.x}:${body.chunk.z}`;
+            mapCache.set(key, body.chunk);
+        }
         broadcastToViewers(packet);
         return;
     }
@@ -121,6 +135,30 @@ function handlePacket(ws, packet) {
     if (serverClient) {
         serverClient.send(JSON.stringify(packet));
     }
+}
+
+
+// biar browser gak not responding kalo nerima 5000 chunk sekaligus
+function syncMapToViewer(ws) {
+    const chunks = Array.from(mapCache.values());
+    const BATCH_SIZE = 50; // kirim 50 chunk per paket
+    let index = 0;
+    function sendNextBatch() {
+        if (ws.readyState !== WebSocket.OPEN) return;
+        if (index >= chunks.length) return;
+        const batch = chunks.slice(index, index + BATCH_SIZE);
+        // bungkus dalem packet sector (bulk chunks), gak pake base64 karna boros CPU jadi better kirim raw JSON array
+        const packet = JSON.stringify({
+            type: "sector",
+            body: { chunks: batch } 
+        });
+        ws.send(packet);
+        index += BATCH_SIZE;
+        // pake setImmediate biar event loop Node.js nafas dulu
+        setImmediate(sendNextBatch);
+    }
+
+    sendNextBatch();
 }
 
 function broadcastToViewers(data) {

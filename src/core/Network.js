@@ -190,19 +190,35 @@ export class Network {
         }
     }
 
-    _handleBulkChunks(base64Chunks) {
-        try {
-            // decode Base64 -> JSON String -> Object
-            const decoded = atob(base64Chunks);
-            const chunks = JSON.parse(decoded);
-            chunks.forEach(chunk => {
+    _handleBulkChunks(data) {
+        let chunks = [];
+        // cek tipe data, String (Base64) atau Array (Raw JSON dari supervisor baru)
+        if (typeof data === 'string') {
+            try {
+                const decoded = atob(data);
+                chunks = JSON.parse(decoded);
+            } catch (e) {
+                console.error("[Network] Failed to parse Base64 sector:", e);
+                return;
+            }
+        } else if (Array.isArray(data)) {
+            // langsung pake
+            chunks = data;
+        } else {
+            console.warn("[Network] Unknown sector data format:", typeof data);
+            return;
+        }
+        // proses masukin ke manager & renderer
+        let count = 0;
+        chunks.forEach(chunk => {
+            try {
                 this.app.chunkManager.addChunk(chunk);
                 this.app.renderer.queueChunk(chunk);
-            });
-            console.log(`[Network] Received sector batch: ${chunks.length} chunks.`);
-        } catch (e) {
-            console.error("[Network] Failed to parse sector chunks:", e);
-        }
+                count++;
+            } catch (err) {
+                // silent fail per chunk biar gak stop satu batch
+            }
+        });
     }
     
     _handleEntityUpdate(entity) {
