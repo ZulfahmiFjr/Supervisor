@@ -121,13 +121,23 @@ export class Renderer {
         // const absZ = Math.abs(chunk.z % RenderSettings.CHUNKS_IN_BUFFER) * 16 * bRes;
         // kita asumsi koordinat positif dulu buat MVP, bisa dibenerin nanti buat negatif
         // BlockPainter sekarang nerima (ctx, x, y, ...)
-        const height = Array.from({ length: 16 }, () => Array(16).fill(0));
-            for (let x = 0; x < 16; x++) {
-                for (let z = 0; z < 16; z++) {
-                    const cell = chunk.layer?.[x]?.[z];
-                    height[x][z] = cell ? cell.y : 0;
-                }
+        // const height = Array.from({ length: 16 }, () => Array(16).fill(0));
+        //     for (let x = 0; x < 16; x++) {
+        //         for (let z = 0; z < 16; z++) {
+        //             const cell = chunk.layer?.[x]?.[z];
+        //             height[x][z] = cell ? cell.y : 0;
+        //         }
+        // }
+        const height = new Int16Array(256);
+        // isi data ketinggian dulu ke array
+        for (let x = 0; x < 16; x++) {
+            for (let z = 0; z < 16; z++) {
+                const cell = chunk.layer?.[x]?.[z];
+                // rumus array 1D, index = x * 16 + z
+                height[x * 16 + z] = cell ? cell.y : 0;
+            }
         }
+        // render & hitung tetangga
         for (let x = 0; x < 16; x++) {
             for (let z = 0; z < 16; z++) {
                 // ambil block ID & Y (ketinggian) dari data chunk layer
@@ -137,10 +147,18 @@ export class Renderer {
                 const blockId = cell.id;
                 const depth = cell.d || 0;
                 // ambil tetangga, clamp edge biar aman
-                const hL = height[Math.max(0, x - 1)][z];
-                const hR = height[Math.min(15, x + 1)][z];
-                const hU = height[x][Math.max(0, z - 1)];
-                const hD = height[x][Math.min(15, z + 1)];
+                // const hL = height[Math.max(0, x - 1)][z];
+                // const hR = height[Math.min(15, x + 1)][z];
+                // const hU = height[x][Math.max(0, z - 1)];
+                // const hD = height[x][Math.min(15, z + 1)];
+                const hL = height[xL * 16 + z]; // kiri
+                const hR = height[xR * 16 + z]; // kanan
+                const hU = height[x * 16 + zU]; // atas
+                const hD = height[x * 16 + zD]; // bawah
+                const xL = Math.max(0, x - 1);
+                const xR = Math.min(15, x + 1);
+                const zU = Math.max(0, z - 1);
+                const zD = Math.min(15, z + 1);
                 // const isContour = (y !== hR) || (y !== hD);
                 const step = 8;
                 const a = Math.floor(y / step);

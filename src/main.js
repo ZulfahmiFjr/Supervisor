@@ -186,9 +186,16 @@ function setupInputs(canvas) {
 function setupResize(container) {
     const resizeObserver = new ResizeObserver((entries) => {
         for (let entry of entries) {
-            const { width, height } = entry.contentRect;
+            // const { width, height } = entry.contentRect;
+            // biar canvas gak setengah pixel
+            const w = Math.floor(entry.contentRect.width);
+            const h = Math.floor(entry.contentRect.height);
+            const viewport = app.renderer.viewport;
+            const center = viewport.canvasToWorld(viewport.width / 2, viewport.height / 2);
             // update ukuran canvas & viewport renderer
-            app.renderer.resize(width, height);
+            app.renderer.resize(w, h);
+            // balikin lagi supaya center world tetep di tengah layar
+            viewport.moveTo(center.x, center.z);
         }
     });
     resizeObserver.observe(container);
