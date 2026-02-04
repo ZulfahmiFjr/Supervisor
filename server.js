@@ -2,13 +2,14 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const WebSocket = require("ws");
+const zlib = require("zlib");
 
 // config Env dari PHP
 const WEB_PORT = Number(process.env.ATLAS_WEB_PORT || 8080);
 const WS_PORT = Number(process.env.ATLAS_WS_PORT || 27095);
 const ATLAS_HOST = process.env.ATLAS_HOST || "127.0.0.1";
 const ATLAS_BIND_HOST = process.env.ATLAS_BIND_HOST || "0.0.0.0";
-const DATA_FILE = path.join(__dirname, "map_data.json"); // File penyimpanan
+const CACHE_DIR = path.join(__dirname, "cache", "map");
 
 // HTTP server (8080) serve ke /config.json
 const server = http.createServer((req, res) => {
@@ -69,41 +70,82 @@ let serverClient = null; // koneksi dari Atlas/PocketMine
 let viewers = []; // koneksi dari Browser
 let lastServerInfo = null;
 // cache map data biar gak terus terusan dikirim ulang
-const mapCache = new Map();
+const worldManagers = new Map();
+
+// helper function buat dapetin/bikin storage world tertentu
+function getWorldStorage(worldName) {
+    if (!worldManagers.has(worldName)) {
+        console.log(`[System] Creating new storage for world: ${worldName}`);
+        worldManagers.set(worldName, new Map());
+    }
+    return worldManagers.get(worldName);
+}
 
 // buat load data pas start
 function loadData() {
-    if (fs.existsSync(DATA_FILE)) {
-        console.log("[System] Found saved map data, loading...");
+    if (fs.existsSync(CACHE_DIR)) {
+        console.log("[System] Loading cached map data from disk...");
         try {
-            const raw = fs.readFileSync(DATA_FILE, "utf-8");
-            const data = JSON.parse(raw);
-            // convert array kembali ke map
-            data.forEach(entry => {
-                if(entry && entry.chunk) { // validasi dikit
-                     const key = `${entry.chunk.x}:${entry.chunk.z}`;
-                     mapCache.set(key, entry.chunk);
+            const files = fs.readdirSync(CACHE_DIR);
+            const binFiles = files.filter(f => f.endsWith(".bin"));
+            if (binFiles.length === 0) return;
+            console.log(`[System] Found ${binFiles.length} map files.`);
+            binFiles.forEach(file => {
+                // ambil nama world dari nama file
+                const worldName = path.basename(file, ".bin");
+                const fullPath = path.join(CACHE_DIR, file);
+                try {
+                    const compressed = fs.readFileSync(fullPath); // baca file binary
+                    const raw = zlib.gunzipSync(compressed).toString("utf-8"); // decompress jadi string json
+                    const data = JSON.parse(raw);
+                    // masukin ke storage
+                    const storage = getWorldStorage(worldName);
+                    // convert array kembali ke map
+                    data.forEach(entry => {
+                        if(entry && entry.chunk) { // validasi dikit
+                            // inject nama world kalo di file lama belum ada
+                            if (!entry.chunk.world) entry.chunk.world = worldName;
+                            const key = `${entry.chunk.x}:${entry.chunk.z}`;
+                            storage.set(key, entry.chunk);
+                        }
+                    });
+                    console.log(`[System] [${worldName}] Loaded ${storage.size} chunks`);
+                } catch (err) {
+                    console.error(`[System] Failed to load ${file}:`, err.message);
                 }
             });
-            console.log(`[System] Loaded ${mapCache.size} chunks from disk.`);
         } catch (e) {
-            console.error("[System] Failed to load data:", e.message);
+            console.error("[System] Error scanning cache:", e.message);
         }
     }
 }
 
 // buat save data snapshot
 function saveData() {
-    if (mapCache.size === 0) return;
-    console.log(`[System] Saving ${mapCache.size} chunks to disk...`);
-    try {
-        // convert map ke array biar bisa dijsonin, simpen valuenya aja
-        const data = Array.from(mapCache.values()).map(chunk => ({ chunk })); 
-        fs.writeFileSync(DATA_FILE, JSON.stringify(data));
-        console.log("[System] Save complete.");
-    } catch (e) {
-        console.error("[System] Failed to save data:", e.message);
+    if (worldManagers.size === 0) return;
+    if (!fs.existsSync(CACHE_DIR)) {
+        try { fs.mkdirSync(CACHE_DIR, { recursive: true }); } catch(e){}
     }
+    console.log(`[System] Saving data for ${worldManagers.size} worlds...`);
+    // loop setiap world yg ada di memory
+    for (const [worldName, chunkMap] of worldManagers) {
+        if (chunkMap.size === 0) continue;
+        const fileName = `${worldName}.bin`; // rpg_world.bin, lobby.bin, dll
+        const fullPath = path.join(CACHE_DIR, fileName);
+        try {
+            // convert map ke array biar bisa dijsonin, simpen valuenya aja
+            const data = Array.from(chunkMap.values()).map(chunk => ({ chunk }));
+            // jadiin json string dulu
+            const jsonString = JSON.stringify(data);
+            // kompres pake Gzip (Level 9 = maksimal kompresi) bikin file jadi kcil bangett
+            const compressed = zlib.gzipSync(jsonString, { level: 9 });
+            fs.writeFileSync(fullPath, compressed);
+            console.log(`[System] Saved ${fileName} (${chunkMap.size} chunks)`);
+        } catch (e) {
+            console.error(`[System] Failed to save ${worldName}:`, e.message);
+        }
+    }
+    console.log("[System] Save cycle complete.");
 }
 
 // load data pas script jalan pertama kali
@@ -174,9 +216,8 @@ function handlePacket(ws, packet) {
             ws.send(JSON.stringify({ type: "info", body: lastServerInfo }));
         }
         // sync cached map
-        if (mapCache.size > 0) {
-            console.log(`[Sync] Sending ${mapCache.size} chunks to new viewer...`);
-            syncMapToViewer(ws);
+        if (worldManagers.size > 0) {
+            syncAllWorldsToViewer(ws);
         }
         return;
     }
@@ -185,8 +226,12 @@ function handlePacket(ws, packet) {
         if (type === "info") lastServerInfo = body || null;
         // simpen ke otak supervisor sebelum dibroadcast
         if (type === "chunk" && body.chunk) {
+            // ambil nama world dari paket PHP
+            const wName = body.chunk.world || "world";
+            // simpan ke memory yg bener
+            const storage = getWorldStorage(wName);
             const key = `${body.chunk.x}:${body.chunk.z}`;
-            mapCache.set(key, body.chunk);
+            storage.set(key, body.chunk);
         }
         broadcastToViewers(packet);
         return;
@@ -198,14 +243,19 @@ function handlePacket(ws, packet) {
 }
 
 // biar browser gak not responding kalo nerima 5000 chunk sekaligus
-function syncMapToViewer(ws) {  
-    const chunks = Array.from(mapCache.values());
+function syncAllWorldsToViewer(ws) {  
+    // gabungin semua chunk dari semua world jadi satu array besar
+    let allChunks = [];
+    for (const [wName, map] of worldManagers) {
+        allChunks = allChunks.concat(Array.from(map.values()));
+    }
+    console.log(`[Sync] Sending total ${allChunks.length} chunks (from ${worldManagers.size} worlds) to viewer...`);
     const BATCH_SIZE = 50; // kirim 50 chunk per paket
     let index = 0;
     function sendNextBatch() {
         if (ws.readyState !== WebSocket.OPEN) return;
-        if (index >= chunks.length) return;
-        const batch = chunks.slice(index, index + BATCH_SIZE);
+        if (index >= allChunks.length) return;
+        const batch = allChunks.slice(index, index + BATCH_SIZE);
         // bungkus dalem packet sector (bulk chunks), gak pake base64 karna boros CPU jadi better kirim raw JSON array
         const packet = JSON.stringify({
             type: "sector",
