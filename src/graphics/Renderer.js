@@ -93,10 +93,12 @@ export class Renderer {
     }
 
     _paintChunkToBuffer(bufferObj, chunk) {
-        if (chunk.minY !== undefined && chunk.maxY !== undefined) {
-            this.blockPainter.setWorldRange(chunk.minY, chunk.maxY);
-        }
-        if (chunk.palette) {
+        // if (chunk.topMinY !== undefined && chunk.topMaxY !== undefined) {
+        //     this.blockPainter.setWorldRange(chunk.topMinY, chunk.topMaxY);
+        // } else if (chunk.minY !== undefined && chunk.maxY !== undefined) {
+        //     this.blockPainter.setWorldRange(chunk.minY, chunk.maxY);
+        // }
+        if (chunk.palette) {    
             this.blockPainter.ingestPalette(chunk.palette);
         }
         const ctx = bufferObj.ctx;
@@ -118,18 +120,28 @@ export class Renderer {
         // const absX = Math.abs(chunk.x % RenderSettings.CHUNKS_IN_BUFFER) * 16 * bRes;
         // const absZ = Math.abs(chunk.z % RenderSettings.CHUNKS_IN_BUFFER) * 16 * bRes;
         // kita asumsi koordinat positif dulu buat MVP, bisa dibenerin nanti buat negatif
-        // kuncinya: BlockPainter sekarang nerima (ctx, x, y, ...)
+        // BlockPainter sekarang nerima (ctx, x, y, ...)
+        const height = Array.from({ length: 16 }, () => Array(16).fill(0));
+            for (let x = 0; x < 16; x++) {
+            for (let z = 0; z < 16; z++) {
+                const cell = chunk.layer?.[x]?.[z];
+                height[x][z] = cell ? cell.y : 0;
+            }
+        }
         for (let x = 0; x < 16; x++) {
             for (let z = 0; z < 16; z++) {
                 // ambil block ID & Y (ketinggian) dari data chunk layer
                 const cell = chunk.layer?.[x]?.[z];
                 if (!cell) continue;
-                // cari key Y numeric misal 62, -10, dll
-                const yKey = Object.keys(cell).find(k => /^-?\d+$/.test(k));
-                if (yKey === undefined) continue;
-                const y = parseInt(yKey, 10);
-                const blockId = cell[yKey];
-                const depth = cell.d ?? 0;
+                const y = cell.y;
+                const blockId = cell.id;
+                const depth = cell.d || 0;
+                // ambil tetangga, clamp edge biar aman
+                const hL = height[Math.max(0, x - 1)][z];
+                const hR = height[Math.min(15, x + 1)][z];
+                const hU = height[x][Math.max(0, z - 1)];
+                const hD = height[x][Math.min(15, z + 1)];
+                const shade = this.blockPainter.hillshade(hL, hR, hU, hD);
                 this.blockPainter.paint(
                     ctx, 
                     pixelX + (x * bRes), // posisi X di canvas buffer
@@ -137,7 +149,8 @@ export class Renderer {
                     y, // ketinggian buat shading
                     blockId,
                     bRes, // ukuran pixel per block
-                    depth
+                    depth,
+                    shade
                 );
             }
         }

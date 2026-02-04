@@ -1,73 +1,65 @@
+// BlockPainter.js
 import { MathUtils } from '../utils/MathUtils.js';
 
 export class BlockPainter {
     constructor() {
-        // this.shadingConfiguration = [
-        //     [2, 40], [3, 15], [4, 20]
-        // ];
-        // this.blockColorMap = {
-        //     '2': '#00b894', // Grass
-        //     '78': '#dfe6e9', // Snow
-        //     '1': '#636e72', // Stone
-        //     '18': '#009432', // Oak leaves
-        //     '9': '#0652DD', // Water
-        //     '12': '#ffeaa7', // Sand
-        //     '3': '#f0932b', // Dirt
-        //     '159': '#edcecc', // Pink clay
-        //     '172': '#c97947', // Hardened Clay
-        //     '161': '#78e08f', // Acacia leaves
-        //     '79': '#74b9ff', // Ice
-        //     '174': '#0984e3', // Packed ice
-        // };
-    //     this.blockColorMap = {};
-    //     this.blockColorMap["10282"] = "#00b894"; // hijau (daratan)
-    //     this.blockColorMap["10531"] = "#0652DD"; // biru (water)
-    //     this.blockColorMap["10521"] = "#ffeaa7"; // kuning (sand)
-    //     this.blockColorMap["10284"] = "#636e72"; // abu (rare)
-    //     this.fallbackBlockColor = this.blockColorMap['10282'];
-    //     this.worldMinY = 0;
-    //     this.worldMaxY = 256;
-    //     this.waterIds = new Set([10531]);
-        this.blockColorMap = {}; // manual override
-        this.fallbackBlockColor = "#4b5563"; // abu netral
-        this.worldMinY = 0;
-        this.worldMaxY = 256;
-        this.idToName = new Map();     // typeId -> "Sand"
-        this.waterIds = new Set();     // typeId water
+        this.blockColorMap = {};
+        this.fallbackBlockColor = "#4b5563";
+        this.idToName = new Map();
+        this.waterIds = new Set();
+        // arah cahaya buat hillshade, barat-laut -> tenggara
+        this.sun = this._normalize3(-1, -1, 1);
+        // strength, makin besar makin kontras
+        this.hillStrength = 1.25; // coba 1.0 - 2.0
+        this.ambient = 0.55; // minimal terang biar gak item pekat
     }
 
-    paint(ctx, x, z, y, blockId, blockSize, depth = 0) {
-        // base color
-        const color = this.getBlockColor(blockId);
+    paint(ctx, x, z, y, blockId, blockSize, depth = 0, shade = 1) {
+        // warna dasar
+        let color = this.getBlockColor(blockId);
+        // terapin hillshade (multiply)
+        color = this._mulColor(color, shade);
         ctx.fillStyle = color;
         ctx.fillRect(x, z, blockSize, blockSize);
-        // depth shading berdasarkan ketinggian (semakin rendah = semakin gelap)
-        const minY = this.worldMinY;
-        const maxY = this.worldMaxY;
-        const denom = Math.max(1, (maxY - minY));
-        let t = MathUtils.clamp((y - minY) / denom, 0, 1);
-        // curve biar perbedaan di midrange lebih kerasa
-        t = Math.pow(t, 0.75);
-        // alpha gelap, lebih besar di dataran rendah
-        const landDark = MathUtils.map(1 - t, 0, 1, 0.10, 0.48);
-        ctx.fillStyle = `rgba(0,0,0,${landDark})`;
-        ctx.fillRect(x, z, blockSize, blockSize);
-        // brighten high
-        const highLight = MathUtils.map(t, 0, 1, 0.00, 0.18);
-        ctx.fillStyle = `rgba(255,255,255,${highLight})`;
-        ctx.fillRect(x, z, blockSize, blockSize);
-        // kusus air tambah gelap berdasarkan depth
+        // tambah gradasi kedelaman
         if (this.waterIds.has(Number(blockId)) && depth > 0) {
-            let dd = MathUtils.clamp(depth / 12, 0, 1); // 30 lebih smooth
-            dd = Math.pow(dd, 0.65); // curve biar lebih kerasa
-            const darkA = MathUtils.map(dd, 0, 1, 0.10, 0.72);
-            ctx.fillStyle = `rgba(0,0,0,${darkA})`;
-            ctx.fillRect(x, z, blockSize, blockSize);
-            // tint biru biar laut
-            const tintA = MathUtils.map(dd, 0, 1, 0.06, 0.22);
-            ctx.fillStyle = `rgba(0,80,200,${tintA})`;
-            ctx.fillRect(x, z, blockSize, blockSize);
+        const waterRatio = MathUtils.clamp(depth / 15, 0, 1);
+        ctx.fillStyle = `rgba(0, 0, 0, ${waterRatio * 0.45})`;
+        ctx.fillRect(x, z, blockSize, blockSize);
+        ctx.fillStyle = `rgba(0, 80, 200, ${waterRatio * 0.22})`;
+        ctx.fillRect(x, z, blockSize, blockSize);
         }
+    }
+
+    hillshade(hL, hR, hU, hD) {
+        // central difference
+        const dx = (hR - hL) * this.hillStrength;
+        const dz = (hD - hU) * this.hillStrength;
+        const n = this._normalize3(-dx, 1, -dz);
+        // dot pake arah matahari -> 0..1
+        let d = (n.x * this.sun.x) + (n.y * this.sun.y) + (n.z * this.sun.z);
+        d = MathUtils.clamp(d, 0, 1);
+        // campur ambient supaya gak terlalu gelap
+        return this.ambient + (1 - this.ambient) * d;
+    }
+
+    _mulColor(hex, shade) {
+        const c = this._hexToRgb(hex);
+        const r = MathUtils.clamp(Math.round(c.r * shade), 0, 255);
+        const g = MathUtils.clamp(Math.round(c.g * shade), 0, 255);
+        const b = MathUtils.clamp(Math.round(c.b * shade), 0, 255);
+        return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    _hexToRgb(hex) {
+        const h = hex.replace('#', '');
+        const v = parseInt(h.length === 3 ? h.split('').map(ch => ch + ch).join('') : h, 16);
+        return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
+    }
+
+    _normalize3(x, y, z) {
+        const len = Math.sqrt(x*x + y*y + z*z) || 1;
+        return { x: x / len, y: y / len, z: z / len };
     }
 
     ingestPalette(palette) {
@@ -76,7 +68,9 @@ export class BlockPainter {
             if (!this.idToName.has(id)) {
                 this.idToName.set(id, String(name));
                 const n = String(name).toLowerCase();
-                if (n.includes("water")) this.waterIds.add(id);
+                if (n.includes("water") || n.includes("flow") || n.includes("liquid")) {
+                    this.waterIds.add(id);
+                }
             }
         }
     }
@@ -90,35 +84,24 @@ export class BlockPainter {
             const c = this._getAutoColorByName(name.toLowerCase());
             if (c) return c;
         }
-        // debug 1x per id
-        this._unknown ??= new Set();
-        const key = String(blockId);
-        if (!this._unknown.has(key)) {
-            this._unknown.add(key);
-            console.log("[BlockPainter] Unknown blockId:", key, "name:", name ?? "N/A");
-        }
         return this.fallbackBlockColor;
     }
 
     _getAutoColorByName(nameLower) {
-        // water
         if (nameLower.includes("water")) return "#0652DD";
-        // sand / dirt / grass
         if (nameLower.includes("sand")) return "#ffeaa7";
         if (nameLower.includes("gravel")) return "#9ca3af";
-        if (nameLower.includes("dirt")) return "#b7791f";
-        if (nameLower.includes("grass")) return "#00b894";
-        // foliage
-        if (nameLower.includes("leaves") || nameLower.includes("leaf")) return "#0b7d3e";
-        // snow / stone / wood
+        if (nameLower.includes("dirt")) return "#b7791f"; // coklat dirt
+        if (nameLower.includes("grass")) return "#2ecc71"; // hijau cerah
+        if (nameLower.includes("leaves") || nameLower.includes("leaf")) return "#27ae60"; // hijau tua
         if (nameLower.includes("snow")) return "#dfe6e9";
         if (nameLower.includes("stone")) return "#636e72";
-        if (nameLower.includes("log") || nameLower.includes("wood")) return "#8d6e63";
+        if (nameLower.includes("log") || nameLower.includes("wood") || nameLower.includes("plank")) return "#8d6e63";
+        if (nameLower.includes("lava")) return "#e17055";
         return null;
     }
 
-    setWorldRange(minY, maxY) {
-        this.worldMinY = minY;
-        this.worldMaxY = maxY;
-    }
+    // hapus biar gak belang belang antar chunk
+    // setWorldRange(minY, maxY) {
+    // }
 }
