@@ -10,11 +10,11 @@ export class BlockPainter {
         // arah cahaya buat hillshade, barat-laut -> tenggara
         this.sun = this._normalize3(-1, -1, 1);
         // strength, makin besar makin kontras
-        this.hillStrength = 1.25; // coba 1.0 - 2.0
-        this.ambient = 0.55; // minimal terang biar gak item pekat
+        this.hillStrength = 1.0; // coba 1.0 - 2.0
+        this.ambient = 0.6; // minimal terang biar gak item pekat
     }
 
-    paint(ctx, x, z, y, blockId, blockSize, depth = 0, shade = 1) {
+    paint(ctx, x, z, y, blockId, blockSize, depth = 0, shade = 1, isContour = false) {
         // warna dasar
         let color = this.getBlockColor(blockId);
         // terapin hillshade (multiply)
@@ -23,11 +23,17 @@ export class BlockPainter {
         ctx.fillRect(x, z, blockSize, blockSize);
         // tambah gradasi kedelaman
         if (this.waterIds.has(Number(blockId)) && depth > 0) {
-        const waterRatio = MathUtils.clamp(depth / 15, 0, 1);
-        ctx.fillStyle = `rgba(0, 0, 0, ${waterRatio * 0.45})`;
-        ctx.fillRect(x, z, blockSize, blockSize);
-        ctx.fillStyle = `rgba(0, 80, 200, ${waterRatio * 0.22})`;
-        ctx.fillRect(x, z, blockSize, blockSize);
+            const waterRatio = MathUtils.clamp(depth / 15, 0, 1);
+            ctx.fillStyle = `rgba(0, 0, 0, ${waterRatio * 0.45})`;
+            ctx.fillRect(x, z, blockSize, blockSize);
+            ctx.fillStyle = `rgba(0, 80, 200, ${waterRatio * 0.22})`;
+            ctx.fillRect(x, z, blockSize, blockSize);
+        }
+        // kalo ini batas ketinggian timpa pake warna item transparan
+        if (isContour) {
+            // pake alpha 0.3 s/d 0.5 biar kaliatan kayak garis item tegas tapi nyatu
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.fillRect(x, z, blockSize, blockSize);
         }
     }
 
@@ -35,7 +41,7 @@ export class BlockPainter {
         // central difference
         const dx = (hR - hL) * this.hillStrength;
         const dz = (hD - hU) * this.hillStrength;
-        const n = this._normalize3(-dx, 1, -dz);
+        const n = this._normalize3(-dx, 2, -dz); // biar lebih soft
         // dot pake arah matahari -> 0..1
         let d = (n.x * this.sun.x) + (n.y * this.sun.y) + (n.z * this.sun.z);
         d = MathUtils.clamp(d, 0, 1);

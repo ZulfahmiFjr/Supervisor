@@ -123,10 +123,10 @@ export class Renderer {
         // BlockPainter sekarang nerima (ctx, x, y, ...)
         const height = Array.from({ length: 16 }, () => Array(16).fill(0));
             for (let x = 0; x < 16; x++) {
-            for (let z = 0; z < 16; z++) {
-                const cell = chunk.layer?.[x]?.[z];
-                height[x][z] = cell ? cell.y : 0;
-            }
+                for (let z = 0; z < 16; z++) {
+                    const cell = chunk.layer?.[x]?.[z];
+                    height[x][z] = cell ? cell.y : 0;
+                }
         }
         for (let x = 0; x < 16; x++) {
             for (let z = 0; z < 16; z++) {
@@ -141,6 +141,7 @@ export class Renderer {
                 const hR = height[Math.min(15, x + 1)][z];
                 const hU = height[x][Math.max(0, z - 1)];
                 const hD = height[x][Math.min(15, z + 1)];
+                const isContour = (y !== hR) || (y !== hD);
                 const shade = this.blockPainter.hillshade(hL, hR, hU, hD);
                 this.blockPainter.paint(
                     ctx, 
@@ -150,7 +151,8 @@ export class Renderer {
                     blockId,
                     bRes, // ukuran pixel per block
                     depth,
-                    shade
+                    shade,
+                    isContour
                 );
             }
         }
