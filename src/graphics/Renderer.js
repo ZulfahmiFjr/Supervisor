@@ -151,14 +151,14 @@ export class Renderer {
                 // const hR = height[Math.min(15, x + 1)][z];
                 // const hU = height[x][Math.max(0, z - 1)];
                 // const hD = height[x][Math.min(15, z + 1)];
-                const hL = height[xL * 16 + z]; // kiri
-                const hR = height[xR * 16 + z]; // kanan
-                const hU = height[x * 16 + zU]; // atas
-                const hD = height[x * 16 + zD]; // bawah
                 const xL = Math.max(0, x - 1);
                 const xR = Math.min(15, x + 1);
                 const zU = Math.max(0, z - 1);
                 const zD = Math.min(15, z + 1);
+                const hL = height[xL * 16 + z]; // kiri
+                const hR = height[xR * 16 + z]; // kanan
+                const hU = height[x * 16 + zU]; // atas
+                const hD = height[x * 16 + zD]; // bawah
                 // const isContour = (y !== hR) || (y !== hD);
                 const step = 8;
                 const a = Math.floor(y / step);
