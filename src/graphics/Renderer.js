@@ -141,7 +141,12 @@ export class Renderer {
                 const hR = height[Math.min(15, x + 1)][z];
                 const hU = height[x][Math.max(0, z - 1)];
                 const hD = height[x][Math.min(15, z + 1)];
-                const isContour = (y !== hR) || (y !== hD);
+                // const isContour = (y !== hR) || (y !== hD);
+                const step = 8;
+                const a = Math.floor(y / step);
+                const isContour =
+                    Math.floor(hR / step) !== a ||
+                    Math.floor(hD / step) !== a;
                 const shade = this.blockPainter.hillshade(hL, hR, hU, hD);
                 this.blockPainter.paint(
                     ctx, 

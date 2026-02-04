@@ -8,7 +8,7 @@ export class BlockPainter {
         this.idToName = new Map();
         this.waterIds = new Set();
         // arah cahaya buat hillshade, barat-laut -> tenggara
-        this.sun = this._normalize3(-1, -1, 1);
+        this.sun = this._normalize3(-1, 1, 1);
         // strength, makin besar makin kontras
         this.hillStrength = 1.0; // coba 1.0 - 2.0
         this.ambient = 0.6; // minimal terang biar gak item pekat
@@ -32,8 +32,8 @@ export class BlockPainter {
         // kalo ini batas ketinggian timpa pake warna item transparan
         if (isContour) {
             // pake alpha 0.3 s/d 0.5 biar kaliatan kayak garis item tegas tapi nyatu
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-            ctx.fillRect(x, z, blockSize, blockSize);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+            ctx.fillRect(x, z + (blockSize - 1), blockSize, 1);
         }
     }
 
