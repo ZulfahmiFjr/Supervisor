@@ -8,6 +8,7 @@ const WEB_PORT = Number(process.env.ATLAS_WEB_PORT || 8080);
 const WS_PORT = Number(process.env.ATLAS_WS_PORT || 27095);
 const ATLAS_HOST = process.env.ATLAS_HOST || "127.0.0.1";
 const ATLAS_BIND_HOST = process.env.ATLAS_BIND_HOST || "0.0.0.0";
+const DATA_FILE = path.join(__dirname, "map_data.json"); // File penyimpanan
 
 // HTTP server (8080) serve ke /config.json
 const server = http.createServer((req, res) => {
@@ -69,6 +70,67 @@ let viewers = []; // koneksi dari Browser
 let lastServerInfo = null;
 // cache map data biar gak terus terusan dikirim ulang
 const mapCache = new Map();
+
+// buat load data pas start
+function loadData() {
+    if (fs.existsSync(DATA_FILE)) {
+        console.log("[System] Found saved map data, loading...");
+        try {
+            const raw = fs.readFileSync(DATA_FILE, "utf-8");
+            const data = JSON.parse(raw);
+            // convert array kembali ke map
+            data.forEach(entry => {
+                if(entry && entry.chunk) { // validasi dikit
+                     const key = `${entry.chunk.x}:${entry.chunk.z}`;
+                     mapCache.set(key, entry.chunk);
+                }
+            });
+            console.log(`[System] Loaded ${mapCache.size} chunks from disk.`);
+        } catch (e) {
+            console.error("[System] Failed to load data:", e.message);
+        }
+    }
+}
+
+// buat save data snapshot
+function saveData() {
+    if (mapCache.size === 0) return;
+    console.log(`[System] Saving ${mapCache.size} chunks to disk...`);
+    try {
+        // convert map ke array biar bisa dijsonin, simpen valuenya aja
+        const data = Array.from(mapCache.values()).map(chunk => ({ chunk })); 
+        fs.writeFileSync(DATA_FILE, JSON.stringify(data));
+        console.log("[System] Save complete.");
+    } catch (e) {
+        console.error("[System] Failed to save data:", e.message);
+    }
+}
+
+// load data pas script jalan pertama kali
+loadData();
+// autosave tiap 5 menit, biar kalo crash gak ilang semua
+setInterval(saveData, 5 * 60 * 1000);
+
+// save pas proses dimatiin (ctrl+c atau command stop)
+if (process.platform === "win32") {
+    const rl = require("readline").createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+    rl.on("SIGINT", () => {
+        process.emit("SIGINT");
+    });
+}
+process.on('SIGINT', () => {
+    console.log("\n[System] Stopping...");
+    saveData();
+    process.exit();
+});
+process.on('SIGTERM', () => {
+    saveData();
+    process.exit();
+});
+
 wss.on("connection", (ws) => {
   ws.on("message", (message) => {
     try {
@@ -94,8 +156,6 @@ function handlePacket(ws, packet) {
     // login logic
     if (type === "login.server") {
         serverClient = ws;
-        // kalo server restart kita clear cache lama biar gak conflict
-        mapCache.clear();
         console.log(`[Auth] Server connected: ${body?.name || "unknown"}`);
         // kirim status true
         ws.send(JSON.stringify({
@@ -137,9 +197,8 @@ function handlePacket(ws, packet) {
     }
 }
 
-
 // biar browser gak not responding kalo nerima 5000 chunk sekaligus
-function syncMapToViewer(ws) {
+function syncMapToViewer(ws) {  
     const chunks = Array.from(mapCache.values());
     const BATCH_SIZE = 50; // kirim 50 chunk per paket
     let index = 0;
