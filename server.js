@@ -71,6 +71,8 @@ let viewers = []; // koneksi dari Browser
 let lastServerInfo = null;
 // cache map data biar gak terus terusan dikirim ulang
 const worldManagers = new Map();
+// cache data player biar viewer yg telat masuk tetep dapet info
+const players = new Map();
 
 // helper function buat dapetin/bikin storage world tertentu
 function getWorldStorage(worldName) {
@@ -174,22 +176,24 @@ process.on('SIGTERM', () => {
 });
 
 wss.on("connection", (ws) => {
-  ws.on("message", (message) => {
-    try {
-      const packet = JSON.parse(message);
-      handlePacket(ws, packet);
-    } catch (e) {
-      console.error("[WS] Invalid JSON:", e.message);
-    }
-  });
-  ws.on("close", () => {
-    if (ws === serverClient) {
-      console.log("[WS] Server (PHP) disconnected");
-      serverClient = null;
-    } else {
-      viewers = viewers.filter((v) => v !== ws);
-    }
-  });
+    // biar PHP login ulang otomatis pas supervisor abis restart
+    ws.send(JSON.stringify({ type: "challenge" }));
+    ws.on("message", (message) => {
+        try {
+            const packet = JSON.parse(message);
+            handlePacket(ws, packet);
+        } catch (e) {
+            console.error("[WS] Invalid JSON:", e.message);
+        }
+    });
+    ws.on("close", () => {
+        if (ws === serverClient) {
+        console.log("[WS] Server (PHP) disconnected");
+        serverClient = null;
+        } else {
+        viewers = viewers.filter((v) => v !== ws);
+        }
+    });
 });
 
 // handle packet dari client (server atau viewer)
@@ -199,10 +203,16 @@ function handlePacket(ws, packet) {
     if (type === "login.server") {
         serverClient = ws;
         console.log(`[Auth] Server connected: ${body?.name || "unknown"}`);
+        // reset cache player pas server baru connect/reconnect biar bersih
+        players.clear();
         // kirim status true
         ws.send(JSON.stringify({
             type: "login.server",
-            body: { status: true, message: "Connected to Supervisor" },
+            body: {
+                status: true,
+                message: "Connected to Supervisor",
+                req_sync: true
+            },
         }));
         return;
     }
@@ -219,6 +229,21 @@ function handlePacket(ws, packet) {
         if (worldManagers.size > 0) {
             syncAllWorldsToViewer(ws);
         }
+        // kirim cache player ke viewer baru
+        if (players.size > 0) {
+            console.log(`[Sync] Sending ${players.size} player to new viewer...`);
+            players.forEach(pData => {
+                // kirim data player join
+                ws.send(JSON.stringify({ type: "player.join", body: pData }));
+                // kirim data muka/face kalo ada
+                if (pData.pixelArray) {
+                    ws.send(JSON.stringify({ 
+                        type: "player.face", 
+                        body: { eid: pData.eid, pixelArray: pData.pixelArray } 
+                    }));
+                }
+            });
+        }
         return;
     }
     // server -> viewer
@@ -232,6 +257,25 @@ function handlePacket(ws, packet) {
             const storage = getWorldStorage(wName);
             const key = `${body.chunk.x}:${body.chunk.z}`;
             storage.set(key, body.chunk);
+        }
+        // simpen data player di memori supervisor
+        if (type === "player.join") {
+            players.set(body.eid, body);
+        }
+        else if (type === "player.leave") {
+            players.delete(body.eid);
+        }
+        else if (type === "entity.position" && players.has(body.eid)) {
+            // update posisi di cache
+            const p = players.get(body.eid);
+            p.position = body.position;
+            players.set(body.eid, p);
+        }
+        else if (type === "player.face" && players.has(body.eid)) {
+            // simpen data face di cache player
+            const p = players.get(body.eid);
+            p.pixelArray = body.pixelArray;
+            players.set(body.eid, p);
         }
         broadcastToViewers(packet);
         return;
