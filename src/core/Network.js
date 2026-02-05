@@ -8,6 +8,15 @@ export class Network {
         this.viewportInterval = null;
         // status state
         this.isConnected = false;
+        window.atlas = this.app;
+    }
+
+    sendConsoleCommand(cmdString) {
+        if (!cmdString || cmdString.trim() === "") return;
+        console.log(`[Network] Sending command: ${cmdString}`);
+        this.send('command', { 
+            command: cmdString 
+        });
     }
 
     async connect(url) {

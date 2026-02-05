@@ -180,7 +180,8 @@ wss.on("connection", (ws) => {
     ws.send(JSON.stringify({ type: "challenge" }));
     ws.on("message", (message) => {
         try {
-            const packet = JSON.parse(message);
+            const text = (typeof message === "string") ? message : message.toString("utf8");
+            const packet = JSON.parse(text);
             handlePacket(ws, packet);
         } catch (e) {
             console.error("[WS] Invalid JSON:", e.message);
@@ -249,6 +250,10 @@ function handlePacket(ws, packet) {
     // server -> viewer
     if (ws === serverClient) {
         if (type === "info") lastServerInfo = body || null;
+        // biar keliatan di terminal supervisor kalau log masuk
+        if (type === "log") {
+            console.log(`[PMMP-Log] ${body.message}`); 
+        }
         // simpen ke otak supervisor sebelum dibroadcast
         if (type === "chunk" && body.chunk) {
             // ambil nama world dari paket PHP

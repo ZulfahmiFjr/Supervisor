@@ -126,7 +126,7 @@ export class UIManager {
         // kirim ke network, command handler server
         // format packet sesuaikan sama backend Atlas
         if (this.app.network) {
-            this.app.network.send('console.command', { command: txt });
+            this.app.network.sendConsoleCommand(txt);
         }
         input.value = '';
     }
